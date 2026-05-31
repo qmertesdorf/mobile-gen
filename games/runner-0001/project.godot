@@ -1,0 +1,23 @@
+; Engine configuration file.
+; Generated for GameForge: Neon Dash (runner-0001)
+
+config_version=5
+
+[application]
+
+config/name="Neon Dash"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.6")
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation="portrait"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
