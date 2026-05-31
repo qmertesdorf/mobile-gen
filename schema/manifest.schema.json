@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://gameforge.local/manifest.schema.json",
+  "title": "GameForge Title Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "name", "created_at", "updated_at", "status", "concept", "build", "assets", "validation", "_reserved"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "status": { "enum": ["concept", "generated", "validated", "playable", "failed"] },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "genre": { "type": "string" },
+        "core_loop": { "type": "string" },
+        "mechanics": { "type": "array", "items": { "type": "string" } },
+        "art_direction": { "type": "string" },
+        "target_platforms": { "type": "array", "items": { "type": "string" } },
+        "differentiation_notes": { "type": "string" }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "engine": { "type": "string" },
+        "engine_version": { "type": "string" },
+        "language": { "type": "string" },
+        "project_path": { "type": "string" },
+        "addons": { "type": "array" },
+        "export_presets": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "type": { "type": "string" },
+          "name": { "type": "string" },
+          "source": { "type": "string" },
+          "origin": { "type": "string" }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "opens_in_editor": { "type": "boolean" },
+        "runs": { "type": "boolean" },
+        "core_loop_functional": { "type": "boolean" },
+        "issues": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "_reserved": {
+      "type": "object",
+      "properties": {
+        "compliance": {},
+        "store": {},
+        "maintenance": {}
+      }
+    }
+  }
+}
