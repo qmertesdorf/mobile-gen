@@ -1,0 +1,124 @@
+{
+  "id": "match3-survival-0002",
+  "name": "Aegis Grid II",
+  "created_at": "2026-05-31T03:04:10.369Z",
+  "updated_at": "2026-05-31T03:15:38.604Z",
+  "status": "playable",
+  "concept": {
+    "genre": "match-3 survival defense (hybrid)",
+    "core_loop": "Drag to swap adjacent gems for 3+ matches on the lower grid; an enemy line advances in real time down the battlefield above and chips your wall's HP continuously while in contact. RED matches blast the line back and damage it; BLUE matches repair the wall — and because these are the SAME swaps, every match is an offense-vs-defense choice (the shared resource is your attention to the board). FORCING FUNCTION: every ~6s the line telegraphs a heavy strike (a charging chevron with a shrinking countdown ring) that craters the wall UNLESS you land a blue match before it fires — which forces you to abandon whatever combo you were building and defend NOW; conversely, if you only ever defend, the line marches into the wall and overwhelms you, so you must also steal moments for red. So second to second the player is deciding: 'defend the telegraphed strike, push the line back, or risk one more swap to set up a bigger combo?' Chaining matches charges a NOVA that clears the whole line (the relief valve). Difficulty: advance speed, telegraph frequency, and reinforcement toughness all step up every ~20s up to a cap, so late game forces tighter offense/defense alternation and bigger combos.",
+    "mechanics": [
+      "drag-to-swap match-3 on a 6-wide colored gem grid",
+      "match detection (3+ row/column) + gravity cascade + refill",
+      "real-time advancing enemy line that deals continuous chip damage to the wall on contact",
+      "shared-resource match effects: red matches damage and push back the line, blue matches repair wall HP — the same swaps serve both, creating offense/defense contention",
+      "TELEGRAPHED heavy strike every ~6s with a visible countdown ring; only a blue match landed in time prevents a large wall hit (the forcing function that reshapes match priority)",
+      "wall HP as the loss condition (game over + restart on tap when wall HP hits 0)",
+      "combo/chain meter that charges a screen-clearing NOVA (reward beat + relief valve)",
+      "score from survival time + enemies destroyed; HUD shows wall HP, nova charge, and the active telegraph countdown",
+      "difficulty ramp: advance speed + telegraph frequency + reinforcement toughness step up every ~20s up to a cap"
+    ],
+    "art_direction": "Clean flat-neon on deep indigo (#0d0b1f). Gems are rounded-square primitives in five saturated hues with a soft additive glow and a small inner highlight so colors read instantly: red = attack, blue = shield, plus green, amber, violet as neutral fillers. The battlefield strip at the top sits on a darker band with a faint scrolling hex/grid pattern receding toward a horizon line for depth; the enemy line is a row of angular magenta chevrons creeping downward, and the wall is a thick cyan bar across the grid's top edge whose brightness and thickness track its HP. TELEGRAPH treatment: when the line charges a heavy strike, its lead chevron pulses red-hot, a shrinking countdown ring draws around it, and a danger vignette bleeds in from the top edge; landing a blue match in time fires a cyan shield-flare that visibly absorbs the blow. Other feedback beats: matched gems pop with a scale-up + hue-colored particle burst; a red match fires a bright tracer streak from the grid up to the line with a hit-flash; the nova meter pulses a ring as it charges and detonates a full-width white sweep; the whole screen flashes white and shakes when the wall is breached. A persistent HUD shows wall HP (top-left), nova charge (top-right), and the telegraph countdown in large high-contrast type.",
+    "target_platforms": [
+      "android"
+    ],
+    "differentiation_notes": "The blend itself is the hook: the grid is your only weapon AND your only shield, so every swap is an offense/defense decision, and a telegraphed strike repeatedly forces you to drop combo-building to defend. That fusion — not match-3 alone, not defense alone — is the game. Distinct from our own Prism Cascade (match-3 racing an abstract drain timer) and from tower defense (no grid-as-weapon)."
+  },
+  "build": {
+    "engine": "godot",
+    "engine_version": "4.6.3.stable",
+    "language": "gdscript",
+    "project_path": "games/match3-survival-0002/",
+    "addons": [],
+    "export_presets": [
+      "android"
+    ]
+  },
+  "assets": [
+    {
+      "type": "sprite",
+      "name": "gem_red_attack",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "gem_blue_shield",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "gem_green",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "gem_amber",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "gem_violet",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_chevron",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "wall_bar",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "telegraph_ring",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "shield_flare",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "battlefield_grid",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "particle",
+      "name": "match_burst",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "particle",
+      "name": "attack_tracer",
+      "source": "placeholder",
+      "origin": "primitive"
+    }
+  ],
+  "validation": {
+    "issues": [
+      "blend cohesion improved vs v1 but still partial: the forcing function reads as a periodic interrupt (puzzle <-> defend beat) rather than continuous fusion; owner: \"definitely more of a blend than before, but still kinda not cohesive\""
+    ],
+    "opens_in_editor": true,
+    "runs": true,
+    "core_loop_functional": true
+  },
+  "_reserved": {
+    "compliance": null,
+    "store": null,
+    "maintenance": null
+  }
+}
