@@ -1,0 +1,61 @@
+{
+  "id": "crosser-0001",
+  "name": "Pixel Hop",
+  "created_at": "2026-05-31T22:39:59.474Z",
+  "updated_at": "2026-05-31T22:44:53.772Z",
+  "status": "validated",
+  "concept": {
+    "genre": "lane-crossing hopper",
+    "core_loop": "One-thumb: tap to hop the hero one lane forward; swipe left/right to sidestep and line up a gap. Cross several lanes of hazards (each lane scrolls at its own speed/direction) to reach the top edge for a point, then the field resets one lane deeper and the run continues. The live decision every second is reading the lanes and timing the hop — dash through a closing gap for a speed-bonus, or sidestep and wait for a safe one. One hazard contact ends the run (tap to restart). Difficulty ramps every ~3 crossings: lanes move faster and hazards pack tighter, up to a cap.",
+    "mechanics": [
+      "tap-to-hop-forward (one lane)",
+      "swipe/drag sidestep (line up gaps)",
+      "multi-lane hazard spawning with per-lane speed + direction",
+      "collision (hazard hits hero -> game over)",
+      "crossing detection + score",
+      "speed-cross streak bonus (reach the top quickly / without backtracking -> bonus points)",
+      "difficulty ramp (lane speed + hazard density tiers, capped)",
+      "game over + tap-to-restart"
+    ],
+    "art_direction": "PIXEL-ART / retro representational — this is the M1.5 raster STYLE-B target (NOT geometric/SVG, and deliberately the HARD-EDGED opposite of creature-0001's soft painterly look): a chunky pixel hero character, blocky pixel hazard creatures/carts, a tiled pixel landscape of grass/path lanes. Builder placeholder (primitives, raster re-skin later with a pixel-art profile + nearest-filter import): a limited bright retro palette (NES-ish grass-green / dirt-brown lanes, hero in one bright accent like cyan or red), hard-edged rectangles snapped to a coarse grid (evoking big pixels), flat alternating lane bands, chunky snap-hop motion (no smooth easing — discrete steps), feedback: a hard 1-frame white flash + short sharp shake on hit, a crisp pop + score tick on each crossing.",
+    "target_platforms": [
+      "android"
+    ],
+    "differentiation_notes": "Distinct from the runner (side auto-scroll), shooter (top-down combat), match-3, and creature-0001 (free-roam soft dodge): a discrete-hop, lane-timing crossing game with no weapons. Its hook is being the set's PIXEL-ART/retro representational title (M1.5 style B), a hard-edged look chosen to contrast maximally with creature-0001's painterly creatures — the two together are the 'one system, two visibly distinct styles' evidence the milestone needs."
+  },
+  "build": {
+    "engine": "godot",
+    "engine_version": "4.6.3.stable",
+    "language": "gdscript",
+    "project_path": "games/crosser-0001/",
+    "addons": [],
+    "export_presets": [
+      "android"
+    ]
+  },
+  "assets": [
+    {
+      "type": "sprite",
+      "name": "hero",
+      "source": "placeholder",
+      "origin": "primitive"
+    },
+    {
+      "type": "sprite",
+      "name": "hazard",
+      "source": "placeholder",
+      "origin": "primitive"
+    }
+  ],
+  "validation": {
+    "issues": [],
+    "opens_in_editor": true,
+    "runs": true,
+    "core_loop_functional": true
+  },
+  "_reserved": {
+    "compliance": null,
+    "store": null,
+    "maintenance": null
+  }
+}

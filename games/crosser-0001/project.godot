@@ -1,0 +1,19 @@
+config_version=5
+
+[application]
+
+config/name="Pixel Hop"
+run/main_scene="res://Main.tscn"
+config/features=PackedStringArray("4.6", "Forward Plus")
+boot_splash/show_image=false
+
+[display]
+
+window/size/viewport_width=720
+window/size/viewport_height=1280
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+
+renderer/rendering_method="mobile"
