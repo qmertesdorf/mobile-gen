@@ -72,8 +72,8 @@ describe("newManifest", () => {
 describe("setStatus", () => {
   const base = () => newManifest({ id: "a", name: "A" }, "2026-05-30T12:00:00Z");
 
-  test("exposes the five POC statuses", () => {
-    expect(STATUSES).toEqual(["concept", "generated", "validated", "playable", "failed"]);
+  test("exposes the six statuses through styled", () => {
+    expect(STATUSES).toEqual(["concept", "generated", "validated", "playable", "styled", "failed"]);
   });
 
   test("advances along the legal path and stamps updated_at", () => {
@@ -102,6 +102,23 @@ describe("setStatus", () => {
 
   test("treats re-setting the same status as a no-op", () => {
     expect(setStatus(base(), "concept").status).toBe("concept");
+  });
+
+  test("advances playable -> styled", () => {
+    const playable = { ...base(), status: "playable" };
+    const styled = setStatus(playable, "styled", "2026-05-30T14:00:00Z");
+    expect(styled.status).toBe("styled");
+    expect(styled.updated_at).toBe("2026-05-30T14:00:00Z");
+  });
+
+  test("allows playable -> failed", () => {
+    const playable = { ...base(), status: "playable" };
+    expect(setStatus(playable, "failed").status).toBe("failed");
+  });
+
+  test("rejects leaving styled (terminal)", () => {
+    const styled = { ...base(), status: "styled" };
+    expect(() => setStatus(styled, "playable")).toThrow(/illegal transition/);
   });
 });
 
