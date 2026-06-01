@@ -84,6 +84,18 @@ node tools/manifest.mjs validate <id>
 ```
 On failure, record the specific issue in `validation.issues`, attribute it to a skill, and do **not** advance — the game stays `playable`. Examples: "asset: left the primitive obstacle drawing under the sprite — double-draw"; "asset: sprites individually fine but don't cohere — prompt_scaffold/style gap"; "asset: hero master generated at 256² — blurry on xxxhdpi, wrong master_resolution"; "comfy.mjs: ComfyUI unreachable — infra, re-run after starting the server". The fix is a specific `asset`/`comfy.mjs` prose or recipe change.
 
+## Method 4 — Audio pass (PNG-independent; for `scored` games)
+
+When a game carries an `audio_pass`, confirm the audio is real and wired:
+
+1. **Files exist & import.** Every `audio_pass.recipes[].name` has a committed file at `games/<id>/audio/<name>.<format>`. Open the project headless (`& "<godot-exe>" --path games/<id>/ --quit-after 2`) and confirm Godot imports the audio without errors in the log (no "Error importing" / failed `.import`).
+2. **Players reference valid streams.** Each `audio_pass.events[].node` exists as an `AudioStreamPlayer` in the scene and its `stream` points at a real imported clip; the music player's stream has `loop = true` when its recipe set `loop:true`.
+3. **SFX fire on events.** Via `selftest.gd`, drive each mapped `signal`/event and assert the corresponding `AudioStreamPlayer.play()` was invoked (e.g. spy by checking `playing` or a wired counter). Logic-gate parity with Method 1.5.
+4. **Mobile sanity.** File sizes are reasonable for mobile (SFX ≪ 1 MB; music a few MB OGG), formats are `wav`/`ogg`, sample rate ≤ 48 kHz.
+5. **IP-safety.** Confirm no recipe prompt names an artist or copyrighted track; music negative prompt excludes vocals unless intended.
+
+Record results in `manifest.validation.issues` as needed. Audio validation does not block the visual pass and vice-versa.
+
 ## Notes
 - Some Godot CLI flags vary slightly by 4.x point release; if `--quit-after` is unavailable, fall back to `--headless --path games/<id>/ --quit` after confirming `--import` succeeds. Verify against the pinned version.
 - Legibility is the product. "It didn't work" is a POC failure; "builder doesn't scaffold touch input" is a POC success.

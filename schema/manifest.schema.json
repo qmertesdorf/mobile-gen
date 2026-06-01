@@ -10,7 +10,7 @@
     "name": { "type": "string", "minLength": 1 },
     "created_at": { "type": "string", "format": "date-time" },
     "updated_at": { "type": "string", "format": "date-time" },
-    "status": { "enum": ["concept", "generated", "validated", "playable", "styled", "failed"] },
+    "status": { "enum": ["concept", "generated", "validated", "playable", "styled", "scored", "failed"] },
     "concept": {
       "type": "object",
       "additionalProperties": false,
@@ -117,6 +117,64 @@
             }
           }
         }
+      }
+    },
+    "audio_pass": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "method": { "type": "string" },
+        "audio_system": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "model": { "type": "string" },
+            "mood_prompt": { "type": "string" },
+            "style_descriptors": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "recipes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string" },
+              "kind": { "enum": ["sfx", "music"] },
+              "prompt": { "type": "string" },
+              "negative": { "type": "string" },
+              "seed": { "type": "number" },
+              "duration_s": { "type": "number" },
+              "sampler": { "type": "string" },
+              "steps": { "type": "number" },
+              "cfg": { "type": "number" },
+              "format": { "enum": ["wav", "ogg"] },
+              "loop": { "type": "boolean" },
+              "import_settings": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "loop": { "type": "boolean" },
+                  "loop_offset": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "event": { "type": "string" },
+              "clip": { "type": "string" },
+              "node": { "type": "string" },
+              "signal": { "type": "string" }
+            }
+          }
+        },
+        "notes": { "type": "string" }
       }
     },
     "_reserved": {

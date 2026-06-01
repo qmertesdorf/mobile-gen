@@ -75,6 +75,22 @@ describe("injectRecipe", () => {
     const r = fullRecipe(); // has no `lora` key
     expect(() => injectRecipe(tpl, r)).toThrow(/%lora%|lora/);
   });
+
+  test("fills %duration% from duration_s for audio recipes", () => {
+    const tpl = {
+      "1": { class_type: "EmptyLatentAudio", inputs: { seconds: "%duration%" } },
+      "2": { class_type: "CLIPTextEncode", inputs: { text: "%prompt%" } }
+    };
+    const recipe = { kind: "music", prompt: "calm ambient pad", duration_s: 30 };
+    const out = injectRecipe(tpl, recipe);
+    expect(out["1"].inputs.seconds).toBe(30);
+    expect(out["2"].inputs.text).toBe("calm ambient pad");
+  });
+
+  test("throws when the template uses %duration% but the recipe omits duration_s", () => {
+    const tpl = { "1": { class_type: "EmptyLatentAudio", inputs: { seconds: "%duration%" } } };
+    expect(() => injectRecipe(tpl, { kind: "music", prompt: "x" })).toThrow(/%duration%|duration/);
+  });
 });
 
 import { check, gen } from "./comfy.mjs";
@@ -217,6 +233,119 @@ describe("gen", () => {
   });
 });
 
+import { genAudio } from "./comfy.mjs";
+
+describe("genAudio", () => {
+  const recipe = () => ({
+    name: "collect", kind: "sfx", prompt: "soft chime pickup", negative: "music, voice",
+    seed: 7, duration_s: 0.8, sampler: "dpmpp_3m_sde_gpu", steps: 8, cfg: 6, format: "wav",
+    loop: false
+  });
+
+  async function withDirs(run) {
+    const templatesDir = mkdtempSync(pjoin(tmpdir(), "cf-atpl-"));
+    const gamesDir = mkdtempSync(pjoin(tmpdir(), "cf-agames-"));
+    writeFileSync(pjoin(templatesDir, "stable-audio.json"), JSON.stringify({
+      "6": { class_type: "CLIPTextEncode", inputs: { text: "%prompt%" } },
+      "11": { class_type: "EmptyLatentAudio", inputs: { seconds: "%duration%" } },
+      "12": { class_type: "SaveAudio", inputs: { audio: ["10", 0] } }
+    }));
+    try { return await run({ templatesDir, gamesDir }); }
+    finally { rmSync(templatesDir, { recursive: true, force: true }); rmSync(gamesDir, { recursive: true, force: true }); }
+  }
+
+  const HISTORY_DONE = {
+    body: { abc: { outputs: { "12": { audio: [{ filename: "ComfyUI_0001.wav", subfolder: "", type: "output" }] } } } }
+  };
+
+  test("happy path: submits, polls, downloads, writes the audio file at games/<id>/audio/<name>.<format>", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({
+        "POST /prompt": { body: { prompt_id: "abc" } },
+        "GET /history/abc": HISTORY_DONE,
+        "GET /view": { bytes: new TextEncoder().encode("WAVDATA").buffer }
+      });
+      const res = await genAudio("creature-0001", "collect", recipe(), { fetch, templatesDir, gamesDir, pollIntervalMs: 0 });
+      const outPath = pjoin(gamesDir, "creature-0001", "audio", "collect.wav");
+      expect(existsSync(outPath)).toBe(true);
+      expect(readFileSync(outPath, "utf8")).toBe("WAVDATA");
+      expect(res.path).toBe(outPath);
+      expect(res.prompt_id).toBe("abc");
+    });
+  });
+
+  test("uses the recipe.format extension for the music .ogg case", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({
+        "POST /prompt": { body: { prompt_id: "abc" } },
+        "GET /history/abc": HISTORY_DONE,
+        "GET /view": { bytes: new TextEncoder().encode("OGGDATA").buffer }
+      });
+      const r = { ...recipe(), name: "bgm", kind: "music", format: "ogg", duration_s: 30, loop: true };
+      const res = await genAudio("creature-0001", "bgm", r, { fetch, templatesDir, gamesDir, pollIntervalMs: 0 });
+      expect(res.path).toBe(pjoin(gamesDir, "creature-0001", "audio", "bgm.ogg"));
+      expect(existsSync(res.path)).toBe(true);
+    });
+  });
+
+  test("throws on a graph error and writes no file", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({
+        "POST /prompt": { ok: false, status: 400, body: { error: { message: "node 11 missing input" } } }
+      });
+      await expect(genAudio("creature-0001", "collect", recipe(), { fetch, templatesDir, gamesDir, pollIntervalMs: 0 }))
+        .rejects.toThrow(/graph error|node 11/);
+      expect(existsSync(pjoin(gamesDir, "creature-0001", "audio", "collect.wav"))).toBe(false);
+    });
+  });
+
+  test("throws and writes no file when the prompt finishes with no audio output", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({
+        "POST /prompt": { body: { prompt_id: "abc" } },
+        "GET /history/abc": { body: { abc: { outputs: { "12": {} } } } }
+      });
+      await expect(genAudio("creature-0001", "collect", recipe(), { fetch, templatesDir, gamesDir, pollIntervalMs: 0 }))
+        .rejects.toThrow(/no audio output/);
+      expect(existsSync(pjoin(gamesDir, "creature-0001", "audio", "collect.wav"))).toBe(false);
+    });
+  });
+
+  test("polls /history until the result appears", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({
+        "POST /prompt": { body: { prompt_id: "abc" } },
+        "GET /history/abc": (n) => (n < 3 ? { body: {} } : HISTORY_DONE),
+        "GET /view": { bytes: new TextEncoder().encode("WAVDATA").buffer }
+      });
+      await genAudio("creature-0001", "collect", recipe(), { fetch, templatesDir, gamesDir, pollIntervalMs: 0 });
+      const historyCalls = fetch.calls.filter((c) => c.key === "GET /history/abc").length;
+      expect(historyCalls).toBe(3);
+    });
+  });
+
+  test("throws with the host when ComfyUI is unreachable", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({ "POST /prompt": new Error("ECONNREFUSED") });
+      await expect(genAudio("creature-0001", "collect", recipe(),
+        { fetch, host: "http://127.0.0.1:8188", templatesDir, gamesDir, pollIntervalMs: 0 }))
+        .rejects.toThrow(/127\.0\.0\.1:8188|unreachable/);
+      expect(existsSync(pjoin(gamesDir, "creature-0001", "audio", "collect.wav"))).toBe(false);
+    });
+  });
+
+  test("throws (writing no file) when the recipe omits format", async () => {
+    await withDirs(async ({ templatesDir, gamesDir }) => {
+      const fetch = mockFetch({});
+      const r = recipe();
+      delete r.format;
+      await expect(genAudio("creature-0001", "collect", r, { fetch, templatesDir, gamesDir, pollIntervalMs: 0 }))
+        .rejects.toThrow(/format/);
+      expect(existsSync(pjoin(gamesDir, "creature-0001", "audio", "collect.undefined"))).toBe(false);
+    });
+  });
+});
+
 import { templateName } from "./comfy.mjs";
 
 describe("templateName", () => {
@@ -228,5 +357,14 @@ describe("templateName", () => {
   });
   test("layerdiffuse with lora → sdxl-layerdiffuse-lora", () => {
     expect(templateName({ layerdiffuse: true, lora: "pixel-art-xl.safetensors" })).toBe("sdxl-layerdiffuse-lora");
+  });
+  test("sfx recipe → stable-audio", () => {
+    expect(templateName({ kind: "sfx" })).toBe("stable-audio");
+  });
+  test("music recipe → stable-audio", () => {
+    expect(templateName({ kind: "music" })).toBe("stable-audio");
+  });
+  test("image recipe (no kind) still selects an image template", () => {
+    expect(templateName({ layerdiffuse: false })).toBe("sdxl");
   });
 });

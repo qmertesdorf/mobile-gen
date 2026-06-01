@@ -45,15 +45,16 @@ export function newManifest({ id, name } = {}, now = new Date().toISOString()) {
   };
 }
 
-export const STATUSES = ["concept", "generated", "validated", "playable", "styled", "failed"];
+export const STATUSES = ["concept", "generated", "validated", "playable", "styled", "scored", "failed"];
 
 // Legal forward transitions. Any non-terminal status may also go to "failed".
 const TRANSITIONS = {
   concept: ["generated", "failed"],
   generated: ["validated", "failed"],
   validated: ["playable", "failed"],
-  playable: ["styled", "failed"],
-  styled: [],
+  playable: ["styled", "scored", "failed"],
+  styled: ["scored", "failed"],
+  scored: ["styled", "failed"],
   failed: []
 };
 

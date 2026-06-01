@@ -23,7 +23,8 @@ const TOKENS = {
   "%sampler%": (r) => r.sampler,
   "%width%": (r) => r.master_resolution,
   "%height%": (r) => r.master_resolution,
-  "%lora%": (r) => r.lora
+  "%lora%": (r) => r.lora,
+  "%duration%": (r) => r.duration_s // audio clip length; token name ≠ field (duration_s)
 };
 
 // Deep-clone `template` and substitute placeholder strings with recipe values.
@@ -70,6 +71,7 @@ export async function check({ fetch = globalThis.fetch, host = COMFY_HOST } = {}
 // that also names a `lora` picks the LoRA-aware variant (which carries a
 // LoraLoader + %lora% token) so per-game style profiles can swap a LoRA.
 function templateName(recipe) {
+  if (recipe.kind === "sfx" || recipe.kind === "music") return "stable-audio";
   if (!recipe.layerdiffuse) return "sdxl";
   return recipe.lora ? "sdxl-layerdiffuse-lora" : "sdxl-layerdiffuse";
 }
@@ -82,6 +84,16 @@ function firstImage(historyEntry) {
   for (const nodeId of Object.keys(outputs)) {
     const imgs = outputs[nodeId]?.images;
     if (Array.isArray(imgs) && imgs.length) return imgs[0];
+  }
+  return null;
+}
+
+// Pull the first output audio descriptor out of a /history entry.
+function firstAudio(historyEntry) {
+  const outputs = historyEntry?.outputs ?? {};
+  for (const nodeId of Object.keys(outputs)) {
+    const clips = outputs[nodeId]?.audio;
+    if (Array.isArray(clips) && clips.length) return clips[0];
   }
   return null;
 }
@@ -148,6 +160,70 @@ export async function gen(id, name, recipe, {
   return { path: outPath, prompt_id };
 }
 
+// Turn an audio recipe into a committed clip at games/<id>/audio/<name>.<format>.
+// Fails loudly (with host/graph context) so any failure is attributable to infra.
+export async function genAudio(id, name, recipe, {
+  fetch = globalThis.fetch,
+  host = COMFY_HOST,
+  templatesDir = TEMPLATES_DIR,
+  gamesDir = GAMES_DIR,
+  pollIntervalMs = 1000,
+  maxPolls = 600 // audio gen is far cheaper than a 1024² image master
+} = {}) {
+  if (!recipe.format) {
+    throw new Error(`comfy: genAudio recipe for '${name}' is missing required field 'format' (expected "wav" or "ogg")`);
+  }
+  const tplPath = join(templatesDir, `${templateName(recipe)}.json`);
+  const template = JSON.parse(readFileSync(tplPath, "utf8"));
+  const workflow = injectRecipe(template, recipe);
+
+  let submit;
+  try {
+    submit = await fetch(`${host}/prompt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: workflow })
+    });
+  } catch (e) {
+    throw new Error(`comfy: ComfyUI unreachable at ${host} (${String(e.message ?? e)}) — start the server or set COMFY_HOST`);
+  }
+  if (!submit.ok) {
+    const err = await submit.json().catch(() => ({}));
+    throw new Error(`comfy: graph error from ${host}/prompt (HTTP ${submit.status}): ${JSON.stringify(err.error ?? err)}`);
+  }
+  const { prompt_id } = await submit.json();
+
+  let clip = null;
+  for (let i = 0; i < maxPolls; i++) {
+    const hist = await fetch(`${host}/history/${prompt_id}`);
+    if (!hist.ok) {
+      throw new Error(`comfy: history poll failed for prompt ${prompt_id} at ${host} (HTTP ${hist.status})`);
+    }
+    const body = await hist.json();
+    const entry = body?.[prompt_id];
+    if (entry) {
+      clip = firstAudio(entry);
+      if (clip) break;
+      throw new Error(`comfy: prompt ${prompt_id} finished with no audio output (graph error?)`);
+    }
+    await sleep(pollIntervalMs);
+  }
+  if (!clip) throw new Error(`comfy: timed out waiting for prompt ${prompt_id} after ${maxPolls} polls`);
+
+  const params = new URLSearchParams({ filename: clip.filename, subfolder: clip.subfolder ?? "", type: clip.type ?? "output" });
+  const view = await fetch(`${host}/view?${params}`);
+  if (!view.ok) {
+    throw new Error(`comfy: failed to download audio from ${host}/view (HTTP ${view.status})`);
+  }
+  const bytes = Buffer.from(await view.arrayBuffer());
+
+  const audioDir = join(gamesDir, id, "audio");
+  mkdirSync(audioDir, { recursive: true });
+  const outPath = join(audioDir, `${name}.${recipe.format}`);
+  writeFileSync(outPath, bytes);
+  return { path: outPath, prompt_id };
+}
+
 async function cli(argv) {
   const [cmd, ...rest] = argv;
   if (cmd === "--check") {
@@ -170,7 +246,17 @@ async function cli(argv) {
     console.log(`wrote ${res.path} (prompt ${res.prompt_id})`);
     return;
   }
-  console.error("usage: node tools/comfy.mjs <--check | gen <id> <asset-name> '<recipe-json>'>");
+  if (cmd === "gen-audio") {
+    const [id, name, recipeJson] = rest;
+    if (!id || !name || !recipeJson) {
+      console.error("usage: node tools/comfy.mjs gen-audio <id> <clip-name> '<recipe-json>'");
+      process.exit(2);
+    }
+    const res = await genAudio(id, name, JSON.parse(recipeJson));
+    console.log(`wrote ${res.path} (prompt ${res.prompt_id})`);
+    return;
+  }
+  console.error("usage: node tools/comfy.mjs <--check | gen <id> <asset-name> '<recipe-json>' | gen-audio <id> <clip-name> '<recipe-json>'>");
   process.exit(2);
 }
 
