@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const REQUIRED_SKILLS = ["concept", "builder", "validator", "asset"];
+const REQUIRED_SKILLS = ["concept", "builder", "validator", "asset", "packager"];
 
 // Minimal frontmatter parse: grab the first --- ... --- block and read name/description.
 function frontmatter(md) {
