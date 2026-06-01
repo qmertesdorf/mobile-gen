@@ -4,3 +4,5 @@
 * text=auto eol=lf
 # Generated raster masters are binary — never normalize line endings.
 *.png binary
+*.wav binary
+*.ogg binary
