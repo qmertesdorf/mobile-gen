@@ -1,5 +1,5 @@
 import { test, expect, describe } from "vitest";
-import { iconSizeTable, sizeBudget, pngSize, exportPresetCfg, parsePresetCfg } from "./package.mjs";
+import { iconSizeTable, sizeBudget, pngSize, exportPresetCfg, parsePresetCfg, atlasLayout } from "./package.mjs";
 
 describe("iconSizeTable", () => {
   test("returns all 8 required Android icon outputs", () => {
@@ -136,5 +136,58 @@ describe("exportPresetCfg + parsePresetCfg", () => {
 
   test("parsePresetCfg throws on an unparseable line", () => {
     expect(() => parsePresetCfg("[preset.0]\nthis line has no equals\n")).toThrow(/unparseable/);
+  });
+});
+
+describe("atlasLayout", () => {
+  // No two placements may overlap (axis-aligned rectangle intersection test).
+  function anyOverlap(placements) {
+    for (let i = 0; i < placements.length; i++) {
+      for (let j = i + 1; j < placements.length; j++) {
+        const a = placements[i], b = placements[j];
+        const sep = a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y;
+        if (!sep) return true;
+      }
+    }
+    return false;
+  }
+
+  test("packs a single rect at the origin in a power-of-two sheet", () => {
+    const out = atlasLayout([{ name: "hero", w: 100, h: 80 }]);
+    expect(out.placements).toEqual([{ name: "hero", x: 0, y: 0, w: 100, h: 80 }]);
+    expect(out.sheet.w).toBe(128);
+    expect(out.sheet.h).toBe(128);
+  });
+
+  test("places every rect with no overlap and inside the sheet", () => {
+    const rects = [
+      { name: "a", w: 200, h: 200 }, { name: "b", w: 150, h: 100 },
+      { name: "c", w: 300, h: 120 }, { name: "d", w: 64, h: 64 }
+    ];
+    const out = atlasLayout(rects, { maxWidth: 512 });
+    expect(out.placements).toHaveLength(rects.length);
+    expect(out.placements.map((p) => p.name).sort()).toEqual(["a", "b", "c", "d"]);
+    expect(anyOverlap(out.placements)).toBe(false);
+    for (const p of out.placements) {
+      expect(p.x + p.w).toBeLessThanOrEqual(out.sheet.w);
+      expect(p.y + p.h).toBeLessThanOrEqual(out.sheet.h);
+    }
+  });
+
+  test("is deterministic — identical input yields identical output", () => {
+    const rects = [{ name: "a", w: 90, h: 40 }, { name: "b", w: 90, h: 40 }, { name: "c", w: 30, h: 70 }];
+    expect(atlasLayout(rects, { maxWidth: 128 })).toEqual(atlasLayout(rects, { maxWidth: 128 }));
+  });
+
+  test("empty input yields an empty sheet", () => {
+    expect(atlasLayout([])).toEqual({ sheet: { w: 0, h: 0 }, placements: [] });
+  });
+
+  test("throws when a rect is wider than maxWidth", () => {
+    expect(() => atlasLayout([{ name: "wide", w: 2000, h: 10 }], { maxWidth: 1024 })).toThrow(/maxWidth|wide/);
+  });
+
+  test("throws on a malformed rect", () => {
+    expect(() => atlasLayout([{ name: "a", w: 10 }])).toThrow(/w.*h|h/);
   });
 });

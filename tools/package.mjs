@@ -113,3 +113,40 @@ export function parsePresetCfg(text) {
   }
   return sections;
 }
+
+// Deterministic shelf bin-packing: tallest-first, left-to-right rows wrapping
+// at maxWidth, sheet rounded up to power-of-two on both axes. Pure (no pixels).
+export function atlasLayout(rects, { maxWidth = 1024, padding = 0 } = {}) {
+  if (!Array.isArray(rects)) {
+    throw new Error("package: atlasLayout(rects) requires an array of { name, w, h }");
+  }
+  const items = rects.map((r) => {
+    if (typeof r?.name !== "string" || typeof r?.w !== "number" || typeof r?.h !== "number") {
+      throw new Error(`package: atlasLayout entry must be { name:string, w:number, h:number }, got ${JSON.stringify(r)}`);
+    }
+    return { name: r.name, w: r.w, h: r.h };
+  });
+  if (items.length === 0) return { sheet: { w: 0, h: 0 }, placements: [] };
+
+  // Deterministic order: tallest, then widest, then name — no Math.random / input order dependence.
+  const sorted = [...items].sort((a, b) => b.h - a.h || b.w - a.w || (a.name < b.name ? -1 : 1));
+  for (const r of sorted) {
+    if (r.w + padding > maxWidth) {
+      throw new Error(`package: atlasLayout sprite '${r.name}' width ${r.w + padding} exceeds maxWidth ${maxWidth}`);
+    }
+  }
+
+  const placements = [];
+  let shelfX = 0, shelfY = 0, shelfH = 0, usedW = 0;
+  for (const r of sorted) {
+    const w = r.w + padding, h = r.h + padding;
+    if (shelfX + w > maxWidth) { shelfY += shelfH; shelfX = 0; shelfH = 0; } // wrap to a new shelf
+    placements.push({ name: r.name, x: shelfX, y: shelfY, w: r.w, h: r.h });
+    shelfX += w;
+    usedW = Math.max(usedW, shelfX);
+    shelfH = Math.max(shelfH, h);
+  }
+  const totalH = shelfY + shelfH;
+  const pow2 = (n) => { let p = 1; while (p < n) p <<= 1; return p; };
+  return { sheet: { w: pow2(usedW), h: pow2(totalH) }, placements };
+}
