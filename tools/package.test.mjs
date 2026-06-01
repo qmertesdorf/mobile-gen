@@ -1,5 +1,6 @@
 import { test, expect, describe } from "vitest";
 import { iconSizeTable, sizeBudget, pngSize } from "./package.mjs";
+import { exportPresetCfg, parsePresetCfg } from "./package.mjs";
 
 describe("iconSizeTable", () => {
   test("returns all 8 required Android icon outputs", () => {
@@ -93,5 +94,43 @@ describe("pngSize", () => {
     const buf = pngHeader(48, 48);
     buf.write("tEXt", 12, "latin1"); // corrupt the chunk type
     expect(() => pngSize(buf)).toThrow(/IHDR|corrupt/);
+  });
+});
+
+describe("exportPresetCfg + parsePresetCfg", () => {
+  test("generates an Android preset that round-trips through the parser", () => {
+    const cfg = exportPresetCfg({ id: "creature-0001", name: "Glade Spirit" });
+    const parsed = parsePresetCfg(cfg);
+    expect(parsed["preset.0"].platform).toBe("Android");
+    expect(parsed["preset.0"].name).toBe("Glade Spirit");
+    expect(parsed["preset.0"].runnable).toBe(true);
+    expect(parsed["preset.0"].export_path).toBe("build/creature-0001-debug.apk");
+    expect(parsed["preset.0.options"]["package/unique_name"]).toBe("com.gameforge.creature-0001");
+    expect(parsed["preset.0.options"]["package/name"]).toBe("Glade Spirit");
+  });
+
+  test("honors an explicit packageName and exportPath", () => {
+    const cfg = exportPresetCfg({ id: "x-0001", name: "X", packageName: "com.acme.x", exportPath: "out/x.apk" });
+    const parsed = parsePresetCfg(cfg);
+    expect(parsed["preset.0.options"]["package/unique_name"]).toBe("com.acme.x");
+    expect(parsed["preset.0"].export_path).toBe("out/x.apk");
+  });
+
+  test("exportPresetCfg throws without id or name", () => {
+    expect(() => exportPresetCfg({ id: "x" })).toThrow(/name|id/);
+    expect(() => exportPresetCfg({ name: "X" })).toThrow(/id|name/);
+  });
+
+  test("parsePresetCfg strips quotes, coerces booleans and ints", () => {
+    const parsed = parsePresetCfg('[preset.0]\n\nname="Hi"\nrunnable=true\nfoo=false\nn=42\n');
+    expect(parsed["preset.0"]).toEqual({ name: "Hi", runnable: true, foo: false, n: 42 });
+  });
+
+  test("parsePresetCfg throws on a key before any section", () => {
+    expect(() => parsePresetCfg('name="orphan"\n')).toThrow(/section/);
+  });
+
+  test("parsePresetCfg throws on an unparseable line", () => {
+    expect(() => parsePresetCfg("[preset.0]\nthis line has no equals\n")).toThrow(/unparseable/);
   });
 });

@@ -59,3 +59,56 @@ export function pngSize(buf) {
   }
   return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
 }
+
+// Generate a minimal-but-valid Godot Android export_presets.cfg string. Pure.
+export function exportPresetCfg({ id, name, packageName, exportPath } = {}) {
+  if (!id || !name) {
+    throw new Error("package: exportPresetCfg requires both { id, name }");
+  }
+  const unique = packageName || `com.gameforge.${id}`;
+  const out = exportPath || `build/${id}-debug.apk`;
+  return [
+    "[preset.0]",
+    "",
+    `name="${name}"`,
+    `platform="Android"`,
+    "runnable=true",
+    `export_filter="all_resources"`,
+    `include_filter=""`,
+    `exclude_filter=""`,
+    `export_path="${out}"`,
+    "",
+    "[preset.0.options]",
+    "",
+    `package/unique_name="${unique}"`,
+    `package/name="${name}"`,
+    ""
+  ].join("\n");
+}
+
+// Parse a Godot .cfg/export_presets.cfg into { section: { key: value } }.
+// Strips surrounding quotes; coerces true/false and bare integers. Throws
+// loudly on a malformed line so the validator can assert "the preset parses".
+export function parsePresetCfg(text) {
+  if (typeof text !== "string") {
+    throw new Error("package: parsePresetCfg requires a string");
+  }
+  const sections = {};
+  let current = null;
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    const sec = line.match(/^\[(.+)\]$/);
+    if (sec) { current = sec[1]; sections[current] = {}; continue; }
+    const kv = line.match(/^([^=]+)=(.*)$/);
+    if (!kv) throw new Error(`package: parsePresetCfg: unparseable line: ${raw}`);
+    if (current === null) throw new Error(`package: parsePresetCfg: key before any [section]: ${raw}`);
+    let val = kv[2].trim();
+    if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+    else if (val === "true") val = true;
+    else if (val === "false") val = false;
+    else if (/^-?\d+$/.test(val)) val = Number(val);
+    sections[current][kv[1].trim()] = val;
+  }
+  return sections;
+}
