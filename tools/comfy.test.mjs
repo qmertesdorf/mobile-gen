@@ -75,6 +75,15 @@ describe("injectRecipe", () => {
     const r = fullRecipe(); // has no `lora` key
     expect(() => injectRecipe(tpl, r)).toThrow(/%lora%|lora/);
   });
+
+  test("fills %duration% from duration_s for audio recipes", () => {
+    const tpl = { "1": { class_type: "EmptyLatentAudio", inputs: { seconds: "%duration%" } },
+                  "2": { class_type: "CLIPTextEncode", inputs: { text: "%prompt%" } } };
+    const recipe = { kind: "music", prompt: "calm ambient pad", duration_s: 30 };
+    const out = injectRecipe(tpl, recipe);
+    expect(out["1"].inputs.seconds).toBe(30);
+    expect(out["2"].inputs.text).toBe("calm ambient pad");
+  });
 });
 
 import { check, gen } from "./comfy.mjs";
@@ -228,5 +237,14 @@ describe("templateName", () => {
   });
   test("layerdiffuse with lora → sdxl-layerdiffuse-lora", () => {
     expect(templateName({ layerdiffuse: true, lora: "pixel-art-xl.safetensors" })).toBe("sdxl-layerdiffuse-lora");
+  });
+  test("sfx recipe → stable-audio", () => {
+    expect(templateName({ kind: "sfx" })).toBe("stable-audio");
+  });
+  test("music recipe → stable-audio", () => {
+    expect(templateName({ kind: "music" })).toBe("stable-audio");
+  });
+  test("image recipe (no kind) still selects an image template", () => {
+    expect(templateName({ layerdiffuse: false })).toBe("sdxl");
   });
 });

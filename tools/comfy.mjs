@@ -23,7 +23,8 @@ const TOKENS = {
   "%sampler%": (r) => r.sampler,
   "%width%": (r) => r.master_resolution,
   "%height%": (r) => r.master_resolution,
-  "%lora%": (r) => r.lora
+  "%lora%": (r) => r.lora,
+  "%duration%": (r) => r.duration_s
 };
 
 // Deep-clone `template` and substitute placeholder strings with recipe values.
@@ -70,6 +71,7 @@ export async function check({ fetch = globalThis.fetch, host = COMFY_HOST } = {}
 // that also names a `lora` picks the LoRA-aware variant (which carries a
 // LoraLoader + %lora% token) so per-game style profiles can swap a LoRA.
 function templateName(recipe) {
+  if (recipe.kind === "sfx" || recipe.kind === "music") return "stable-audio";
   if (!recipe.layerdiffuse) return "sdxl";
   return recipe.lora ? "sdxl-layerdiffuse-lora" : "sdxl-layerdiffuse";
 }
