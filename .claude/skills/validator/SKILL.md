@@ -98,6 +98,29 @@ When a game carries an `audio_pass`, confirm the audio is real and wired:
 
 Record results in `manifest.validation.issues` as needed. Audio validation does not block the visual pass and vice-versa.
 
+## Method 5 — Packaging gate (`scored → packaged`, after the `packager` skill)
+
+When `packager` has produced a `store_pass`, assert the title is genuinely store-ready — **headlessly and without the Android SDK** — then advance to the terminal `packaged` status. The CI-checkable assertions run through `tools/package.mjs verify` (pure file + dimension + parse checks; no GPU, no SDK):
+
+```
+node tools/package.mjs verify <id>
+```
+
+1. **Both polish passes present + A/B-confirmed.** A game is store-ready only with **both** a confirmed visual `asset_pass` **and** a confirmed `audio_pass` (spec §2). The gate keys off the **presence of both pass blocks** — the source of truth the `asset`/`audio` skills designate — **not** the lossy `status` string (which holds only `styled` *or* `scored` at once). The A/B *confirmation* itself is the human gate that advanced the title through `styled` (visual) and `scored` (audio): the canonical incoming status is `scored`, having passed through `styled`. If either block is absent, or the owner has not A/B-confirmed both visual and audio, **do not** advance — record "packager ran before both identities were owner-confirmed."
+2. **Every icon at exact px.** Each `iconSizeTable()` entry exists at its **exact** pixel dimensions (read straight from each PNG's IHDR by `package.mjs`, no engine). A missing or wrong-sized icon is a `packager`/`package.mjs` finding.
+3. **Atlas covers every member.** The atlas sheet exists and its map (`store/atlas.json`) has one placement per member sprite (`sprite_count` matches).
+4. **Size budget passes.** `store_pass.size_budget.pass` is true (total committed store bytes ≤ budget). On failure, attribute it to oversized masters or too many assets — a specific `packager` choice.
+5. **Export preset parses.** `games/<id>/export_presets.cfg` exists and parses as a valid Godot Android preset (`parsePresetCfg` → `preset.0.platform == "Android"`).
+6. **Regression guard.** The game still imports + runs headless clean — `godot --headless --path games/<id>/ --quit-after 120`, exit 0 with no `SCRIPT ERROR`/`ERROR:`/"Failed to load" (packaging must not have broken the game).
+7. **Cross-modal cohesion A/B (human).** The owner confirms the visuals, audio, **and the store icon/splash/screenshots** read as **one themed world** — the same premise/tone/setting from `concept.theme` — not four independent interpretations. (This is the M2 cohesion check the theming precursor explicitly deferred to here.) On failure, attribute it to a **`concept.theme` gap** (anchor too vague) or to the **skill that ignored the theme** (e.g. "packager: chose a hard-neon icon for a cozy-storybook theme — ignored `concept.theme.tone`") — a specific, fixable prose cause.
+
+On all gates passing:
+```
+node tools/manifest.mjs set-status <id> packaged
+node tools/manifest.mjs validate <id>
+```
+On failure, record the specific issue in `validation.issues`, attribute it to a skill (`packager` / `package.mjs`), and do **not** advance — the game stays `scored`. The **icon/splash aesthetic A/B** (item 7's aesthetic verdict) and the **real APK build** are explicitly the owner gate and the **§8 Android-toolchain feasibility gate** — not asserted here. The end-to-end `… → packaged` proof needs a `scored` game (owner-gated) plus the APK gate; the foundation exercises the CI-checkable assertions against the current substrate without claiming `packaged` (spec §9).
+
 ## Notes
 - Some Godot CLI flags vary slightly by 4.x point release; if `--quit-after` is unavailable, fall back to `--headless --path games/<id>/ --quit` after confirming `--import` succeeds. Verify against the pinned version.
 - Legibility is the product. "It didn't work" is a POC failure; "builder doesn't scaffold touch input" is a POC success.
