@@ -150,3 +150,169 @@ export function atlasLayout(rects, { maxWidth = 1024, padding = 0 } = {}) {
   const pow2 = (n) => { let p = 1; while (p < n) p <<= 1; return p; };
   return { sheet: { w: pow2(usedW), h: pow2(totalH) }, placements };
 }
+
+// Resolve the pinned Godot binary. PowerShell carries a `godot` shim; fall back
+// to the winget install path the README/memory pin (godot-binary-path).
+function godotBin() {
+  return process.env.GODOT_BIN
+    || "C:\\Users\\quint\\AppData\\Local\\Microsoft\\WinGet\\Packages\\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\\Godot_v4.6.3-stable_win64_console.exe";
+}
+
+function runGodot(args, label) {
+  try {
+    return execFileSync(godotBin(), args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  } catch (e) {
+    const out = `${e.stdout ?? ""}${e.stderr ?? ""}`;
+    throw new Error(`package: Godot ${label} failed: ${out || e.message}`);
+  }
+}
+
+// Resize the icon master into every iconSizeTable() entry under games/<id>/store/icons/.
+export function generateIcons(id, { gamesDir = GAMES_DIR } = {}) {
+  const m = JSON.parse(readFileSync(join(REPO_ROOT, "manifests", `${id}.json`), "utf8"));
+  const master = m?.store_pass?.icon_master;
+  if (!master) throw new Error(`package: generateIcons needs store_pass.icon_master in manifests/${id}.json`);
+  const masterAbs = join(gamesDir, id, master);
+  if (!existsSync(masterAbs)) throw new Error(`package: icon master not found at ${masterAbs}`);
+  const outdir = join(gamesDir, id, "store", "icons");
+  const specs = iconSizeTable().map((e) => `${e.name}:${e.px}`).join(",");
+  const out = runGodot(["--headless", "--path", GODOT_DIR, "--script", "res://icon_resize.gd", "--", masterAbs, outdir, specs], "icon_resize");
+  if (!out.includes("ICON_RESIZE OK")) throw new Error(`package: icon_resize did not report OK:\n${out}`);
+  return { outdir, icons: iconSizeTable().map((e) => ({ ...e, source: `store/icons/${e.name}.png` })) };
+}
+
+// Build the atlas layout from the game's raster sprites, write the map JSON, render the sheet.
+export function generateAtlas(id, { gamesDir = GAMES_DIR } = {}) {
+  const artDir = join(gamesDir, id, "art");
+  const sprites = existsSync(artDir) ? readdirSync(artDir).filter((f) => f.endsWith(".png")) : [];
+  if (sprites.length === 0) throw new Error(`package: no .png sprites under ${artDir} to atlas`);
+  const rects = sprites.map((f) => {
+    const { w, h } = pngSize(readFileSync(join(artDir, f)));
+    return { name: basename(f, ".png"), w, h };
+  });
+  const layout = atlasLayout(rects);
+  const storeDir = join(gamesDir, id, "store");
+  mkdirSync(storeDir, { recursive: true });
+  const mapPath = join(storeDir, "atlas.json");
+  writeFileSync(mapPath, JSON.stringify(layout, null, 2) + "\n");
+  const sheetPath = join(storeDir, "atlas.png");
+  const out = runGodot(["--headless", "--path", GODOT_DIR, "--script", "res://atlas_render.gd", "--", mapPath, artDir, sheetPath], "atlas_render");
+  if (!out.includes("ATLAS_RENDER OK")) throw new Error(`package: atlas_render did not report OK:\n${out}`);
+  return { sheet: "store/atlas.png", map: "store/atlas.json", sprite_count: rects.length, layout };
+}
+
+// Capture one gameplay screenshot on the real renderer (copies the harness in, runs, cleans up).
+export function captureScreenshot(id, name, { gamesDir = GAMES_DIR, frames = 220 } = {}) {
+  const gameDir = join(gamesDir, id);
+  const harnessSrc = join(GODOT_DIR, "screenshot.gd");
+  const harnessDst = join(gameDir, "_screenshot.gd");
+  const storeDir = join(gameDir, "store", "screenshots");
+  mkdirSync(storeDir, { recursive: true });
+  const outPath = join(storeDir, `${name}.png`);
+  copyFileSync(harnessSrc, harnessDst);
+  try {
+    const out = runGodot(["--path", gameDir, "--script", "res://_screenshot.gd", "--", outPath, String(frames)], "screenshot");
+    if (!out.includes("SCREENSHOT OK")) throw new Error(`package: screenshot did not report OK:\n${out}`);
+  } finally {
+    rmSync(harnessDst, { force: true });
+  }
+  return { name, source: `store/screenshots/${name}.png`, path: outPath };
+}
+
+// Sum the committed store assets and compare to the budget. File-based; pure math via sizeBudget.
+export function budgetReport(id, { gamesDir = GAMES_DIR, budgetBytes = DEFAULT_SIZE_BUDGET } = {}) {
+  const storeDir = join(gamesDir, id, "store");
+  const files = [];
+  const walk = (dir) => {
+    if (!existsSync(dir)) return;
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, ent.name);
+      if (ent.isDirectory()) walk(p);
+      else files.push({ path: p.slice(join(gamesDir, id).length + 1).replace(/\\/g, "/"), bytes: statSync(p).size });
+    }
+  };
+  walk(storeDir);
+  return sizeBudget(files, budgetBytes);
+}
+
+// Validator Method 5's headless, no-SDK assertions. Throws on the first hard failure.
+export function verify(id, { gamesDir = GAMES_DIR } = {}) {
+  const m = JSON.parse(readFileSync(join(REPO_ROOT, "manifests", `${id}.json`), "utf8"));
+  const sp = m.store_pass;
+  if (!sp) throw new Error(`package: verify: manifests/${id}.json has no store_pass`);
+  const issues = [];
+
+  // 1. every iconSizeTable entry exists at its exact px
+  for (const want of iconSizeTable()) {
+    const rec = (sp.icons || []).find((i) => i.name === want.name);
+    if (!rec) { issues.push(`missing icon ${want.name}`); continue; }
+    const abs = join(gamesDir, id, rec.source);
+    if (!existsSync(abs)) { issues.push(`icon file absent: ${rec.source}`); continue; }
+    const { w, h } = pngSize(readFileSync(abs));
+    if (w !== want.px || h !== want.px) issues.push(`icon ${want.name} is ${w}x${h}, expected ${want.px}x${want.px}`);
+  }
+
+  // 2. atlas sheet exists and its map covers every member sprite
+  if (sp.atlas) {
+    const sheetAbs = join(gamesDir, id, sp.atlas.sheet);
+    const mapAbs = join(gamesDir, id, sp.atlas.map);
+    if (!existsSync(sheetAbs)) issues.push(`atlas sheet absent: ${sp.atlas.sheet}`);
+    if (!existsSync(mapAbs)) issues.push(`atlas map absent: ${sp.atlas.map}`);
+    else {
+      const layout = JSON.parse(readFileSync(mapAbs, "utf8"));
+      if ((layout.placements || []).length !== sp.atlas.sprite_count) {
+        issues.push(`atlas map covers ${layout.placements?.length} sprites, store_pass says ${sp.atlas.sprite_count}`);
+      }
+    }
+  }
+
+  // 3. size budget passes
+  if (sp.size_budget && sp.size_budget.pass !== true) issues.push(`size budget fails: ${sp.size_budget.total_bytes} > ${sp.size_budget.budget_bytes}`);
+
+  // 4. export preset parses as a valid Godot Android preset
+  if (sp.export_preset) {
+    const cfgAbs = join(gamesDir, id, sp.export_preset.path);
+    if (!existsSync(cfgAbs)) issues.push(`export preset absent: ${sp.export_preset.path}`);
+    else {
+      const parsed = parsePresetCfg(readFileSync(cfgAbs, "utf8"));
+      if (parsed["preset.0"]?.platform !== "Android") issues.push(`export preset platform is not Android`);
+    }
+  }
+
+  // 5. both polish passes present (A/B confirmation is the human gate -- reported, not asserted here)
+  const bothPasses = Boolean(m.asset_pass) && Boolean(m.audio_pass);
+  return { id, issues, file_checks_pass: issues.length === 0, both_passes_present: bothPasses, status: m.status };
+}
+
+async function cli(argv) {
+  const [cmd, ...rest] = argv;
+  if (cmd === "--check") {
+    const [id] = rest;
+    if (!id) { console.error("usage: node tools/package.mjs --check <id>"); process.exit(2); }
+    const r = verify(id);
+    console.log(`package verify ${id}: file_checks=${r.file_checks_pass ? "PASS" : "FAIL"} both_passes_present=${r.both_passes_present} status=${r.status}`);
+    if (r.issues.length) { console.error(r.issues.map((i) => `  - ${i}`).join("\n")); process.exit(1); }
+    return;
+  }
+  const id = rest[0];
+  if (!id) { console.error("usage: node tools/package.mjs <icons|atlas|screenshot|budget|preset|verify|--check> <id> ..."); process.exit(2); }
+  switch (cmd) {
+    case "icons": console.log(JSON.stringify(generateIcons(id), null, 2)); return;
+    case "atlas": console.log(JSON.stringify(generateAtlas(id), null, 2)); return;
+    case "screenshot": console.log(JSON.stringify(captureScreenshot(id, rest[1] || "screen-1", { frames: Number(rest[2] || 220) }), null, 2)); return;
+    case "budget": console.log(JSON.stringify(budgetReport(id), null, 2)); return;
+    case "preset": {
+      const m = JSON.parse(readFileSync(join(REPO_ROOT, "manifests", `${id}.json`), "utf8"));
+      console.log(exportPresetCfg({ id, name: m.name }));
+      return;
+    }
+    case "verify": { const r = verify(id); console.log(JSON.stringify(r, null, 2)); if (r.issues.length) process.exit(1); return; }
+    default:
+      console.error("usage: node tools/package.mjs <icons|atlas|screenshot|budget|preset|verify|--check> <id> ...");
+      process.exit(2);
+  }
+}
+
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  cli(process.argv.slice(2)).catch((e) => { console.error(e.message); process.exit(1); });
+}
