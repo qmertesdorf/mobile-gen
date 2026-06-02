@@ -84,11 +84,15 @@ export function decodeWav(buf) {
     throw new Error(`comfy: decodeWav supports 16-bit PCM only (got format ${fmtCode}, ${bitDepth}-bit) — the SFX envelope seam assumes the Stable Audio Open soundfile-WAV output`);
   }
   if (!dataOff || channels < 1) throw new Error("comfy: decodeWav: missing fmt/data chunk");
+  if (dataOff + dataLen > buf.length) throw new Error("comfy: decodeWav: data chunk declares more bytes than the file holds (truncated WAV)");
   const frames = Math.floor(dataLen / 2 / channels);
   const samples = [];
   for (let c = 0; c < channels; c++) samples.push(new Float32Array(frames));
   for (let i = 0; i < frames; i++) {
     for (let c = 0; c < channels; c++) {
+      // /32767 is symmetric with encodeWav's *32767 so the round-trip is lossless within int16
+      // quantization (the most-negative −32768 simply clamps back to −1 on re-encode — a 1-LSB,
+      // inaudible edge case); do NOT change to /32768 without revisiting that symmetry.
       samples[c][i] = buf.readInt16LE(dataOff + (i * channels + c) * 2) / 32767;
     }
   }
