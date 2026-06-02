@@ -70,6 +70,26 @@ Proven recipe defaults:
 
 See `docs/superpowers/m1.6-feasibility-notes.md` for full gate findings.
 
+## Android export (build/ship)
+
+`tools/package.mjs` carries a **toolchain-guarded** Godot Android export seam — the same pure-planner + impure-spawn + no-SDK-skip pattern as the raster/audio tools. The pure `buildArtifactPlan` and the preset emitters are unit-tested with no SDK; `buildArtifact()` spawns headless Godot and **skips cleanly when `ANDROID_HOME`/`ANDROID_SDK_ROOT` is unset** (CI posture).
+
+```
+node tools/package.mjs build <id>                  # debug APK  → games/<id>/build/<id>-debug.apk
+node tools/package.mjs build <id> --release --aab  # signed AAB → games/<id>/build/<id>-release.aab
+node tools/package.mjs verify-build <id>           # assert the built file is a well-formed APK/AAB (skips w/o SDK)
+```
+
+The `packager` skill runs `build` after generating store assets and records `store_pass.build_artifact` (format, build_type, path, bytes, package). `validator` Method 5 runs `verify-build` when the toolchain is present. Build outputs and keystores are **git-ignored** (`games/*/build/`, `*.apk`, `*.aab`, `*.keystore`).
+
+**One-time machine setup** (run `tools/android-setup.ps1`, then confirm the printed Godot editor-settings keys):
+1. **Android SDK** at `C:\Users\quint\AppData\Local\Android\Sdk`; export `ANDROID_HOME`/`ANDROID_SDK_ROOT` and add `platform-tools`/`emulator` to PATH.
+2. **Debug keystore** at `~/.android/debug.keystore` via `keytool` (alias `androiddebugkey`, store/key pass `android`).
+3. **Godot editor settings** (`%APPDATA%\Godot\editor_settings-4.tres`): set `export/android/android_sdk_path` + the debug-keystore keys — headless CLI export reads these.
+4. **AVD** via `avdmanager` (verify a system-image boots in `emulator` before relying on it).
+
+**Release signing (Phase B):** the committed `export_presets.cfg` carries NO secrets. `buildArtifact()` for a release build sets Godot's `GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD` env vars from `tools/android-signing.local.json` (git-ignored). AAB output requires Godot's **gradle build** enabled (`gradle_build/use_gradle_build=true` in the release preset) and an installed Android build template — this is the standard AAB path, not custom native gradle source. Play Console submission steps live in `docs/superpowers/specs/2026-06-02-play-console-submission.md`.
+
 ## Tests
 
 `npm test`
