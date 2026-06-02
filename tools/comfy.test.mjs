@@ -234,6 +234,7 @@ describe("gen", () => {
 });
 
 import { genAudio } from "./comfy.mjs";
+import { decodeWav, encodeWav, envelopeSfxWav } from "./comfy.mjs";
 
 describe("genAudio", () => {
   const recipe = () => ({
@@ -392,8 +393,6 @@ describe("templateName", () => {
     expect(templateName({ layerdiffuse: false })).toBe("sdxl");
   });
 });
-
-import { decodeWav, encodeWav, envelopeSfxWav } from "./comfy.mjs";
 
 // Build a mono 16-bit WAV: `pre` ms of near-silence, `tone` ms of a sine at
 // amplitude `amp`, `post` ms of near-silence. Returns a Buffer via encodeWav so
