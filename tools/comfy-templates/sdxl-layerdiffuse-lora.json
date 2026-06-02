@@ -31,7 +31,7 @@
       "steps": "%steps%",
       "cfg": "%cfg%",
       "sampler_name": "%sampler%",
-      "scheduler": "normal",
+      "scheduler": "%scheduler%",
       "positive": ["pos", 0],
       "negative": ["neg", 0],
       "latent_image": ["latent", 0],

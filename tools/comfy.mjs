@@ -24,7 +24,8 @@ const TOKENS = {
   "%width%": (r) => r.master_resolution,
   "%height%": (r) => r.master_resolution,
   "%lora%": (r) => r.lora,
-  "%duration%": (r) => r.duration_s // audio clip length; token name ≠ field (duration_s)
+  "%duration%": (r) => r.duration_s, // audio clip length; token name ≠ field (duration_s)
+  "%scheduler%": (r) => r.scheduler ?? "normal" // default "normal" (the LayerDiffuse-safe scheduler); recipes opt into "karras"
 };
 
 // Deep-clone `template` and substitute placeholder strings with recipe values.

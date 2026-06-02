@@ -91,6 +91,12 @@ describe("injectRecipe", () => {
     const tpl = { "1": { class_type: "EmptyLatentAudio", inputs: { seconds: "%duration%" } } };
     expect(() => injectRecipe(tpl, { kind: "music", prompt: "x" })).toThrow(/%duration%|duration/);
   });
+
+  test("fills %scheduler% from recipe.scheduler, defaulting to normal when omitted", () => {
+    const tpl = { "3": { class_type: "KSampler", inputs: { scheduler: "%scheduler%" } } };
+    expect(injectRecipe(tpl, { ...fullRecipe(), scheduler: "karras" })["3"].inputs.scheduler).toBe("karras");
+    expect(injectRecipe(tpl, fullRecipe())["3"].inputs.scheduler).toBe("normal"); // default, like %negative%
+  });
 });
 
 import { check, gen } from "./comfy.mjs";
