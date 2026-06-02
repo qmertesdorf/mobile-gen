@@ -337,6 +337,33 @@ describe("validate", () => {
     m.store_pass = { icon_master: "art/x.png", bogus: true };
     expect(validate(m).valid).toBe(false);
   });
+
+  test("accepts a store_pass carrying a build_artifact record", () => {
+    const m = validManifest();
+    m.store_pass = {
+      icon_master: "art/spirit.png",
+      build_artifact: { format: "apk", build_type: "debug", path: "build/creature-0001-debug.apk", bytes: 12345678, package: "com.gameforge.creature-0001" }
+    };
+    expect(validate(m)).toEqual({ valid: true, errors: [] });
+  });
+
+  test("rejects a build_artifact with an unknown format enum", () => {
+    const m = validManifest();
+    m.store_pass = { build_artifact: { format: "ipa", build_type: "debug" } };
+    expect(validate(m).valid).toBe(false);
+  });
+
+  test("rejects an unknown key inside build_artifact", () => {
+    const m = validManifest();
+    m.store_pass = { build_artifact: { format: "aab", build_type: "release", bogus: true } };
+    expect(validate(m).valid).toBe(false);
+  });
+
+  test("build_artifact is optional (no regression for pre-build store_pass)", () => {
+    const m = validManifest();
+    m.store_pass = { icon_master: "art/spirit.png" };
+    expect(validate(m)).toEqual({ valid: true, errors: [] });
+  });
 });
 
 describe("newManifest", () => {

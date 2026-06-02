@@ -283,6 +283,17 @@
             "package": { "type": "string" }
           }
         },
+        "build_artifact": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "format": { "enum": ["apk", "aab"] },
+            "build_type": { "enum": ["debug", "release"] },
+            "path": { "type": "string" },
+            "bytes": { "type": "number" },
+            "package": { "type": "string" }
+          }
+        },
         "icon_master": { "type": "string" },
         "notes": { "type": "string" }
       }
