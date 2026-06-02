@@ -49,14 +49,18 @@ node tools/package.mjs screenshot <id> <name> [frames]   # capture a play frame 
 node tools/package.mjs splash <id> [#RRGGBBAA]   # composite the icon master onto a themed bg → store/splash.png (headless Image); pick the bg from concept.theme
 node tools/package.mjs budget <id>       # sum store assets vs the budget (run AFTER icons/atlas/screenshot/splash so it includes them)
 node tools/package.mjs preset <id>       # print the Android export_presets.cfg (redirect into games/<id>/export_presets.cfg)
+node tools/package.mjs build <id>            # build the debug APK via headless Godot (toolchain-guarded: skips with exit 3 if ANDROID_HOME unset)
+node tools/package.mjs build <id> --release --aab   # build the signed release AAB (needs tools/android-signing.local.json)
 ```
 
 Then record `store_pass` (arrays replace wholesale — pass the full set):
 
 ```
-node tools/manifest.mjs merge <id> "{\"store_pass\": { \"icon_master\": \"art/<hero>.png\", \"icons\": [ … ], \"splash\": { … }, \"screenshots\": [ … ], \"atlas\": { … }, \"size_budget\": { … }, \"export_preset\": { \"path\": \"export_presets.cfg\", \"platform\": \"android\", \"package\": \"com.gameforge.<id>\" }, \"notes\": \"…\" }}"
+node tools/manifest.mjs merge <id> "{\"store_pass\": { \"icon_master\": \"art/<hero>.png\", \"icons\": [ … ], \"splash\": { … }, \"screenshots\": [ … ], \"atlas\": { … }, \"size_budget\": { … }, \"export_preset\": { \"path\": \"export_presets.cfg\", \"platform\": \"android\", \"package\": \"com.gameforge.<id>\" }, \"build_artifact\": { … }, \"notes\": \"…\" }}"
 node tools/manifest.mjs validate <id>
 ```
+
+Record `store_pass.build_artifact` from the `build` command's JSON (format, build_type, path, bytes, package). If the build skipped (exit 3, no Android toolchain), omit `build_artifact` and note the deferred toolchain gate — do not fabricate a record.
 
 ## Hard requirements & honesty
 
@@ -70,8 +74,9 @@ node tools/manifest.mjs validate <id>
 
 ## Deferred (named gates — track, do not fake)
 
-- **Actual APK build** (`godot --headless --export-debug "Android" …`) → the **Android-toolchain feasibility gate** (spec §8): needs the Android SDK + JDK (`ANDROID_HOME` unset here). Same shape as the ComfyUI (M1.5) and Stable-Audio (M1.6) gates — stood up once, a single decisive pass/fail.
-- **Icon/splash aesthetic A/B + real store submission** (account, signing keys, listing copy, legal) → owner-gated, like every art/audio A/B.
+- **APK/AAB build is now in scope** (no longer deferred): `node tools/package.mjs build <id>` shells out to headless Godot, guarded by `ANDROID_HOME`. On a toolchain-equipped machine it produces a debug APK (and `--release --aab` a signed AAB) and records `store_pass.build_artifact`. Without the SDK it skips cleanly (exit 3) — the same no-GPU/no-ComfyUI posture. The one-time machine setup (debug keystore, Godot editor SDK path, AVD) is documented in `README.md` → "Android export" + `tools/android-setup.ps1`.
+- **Real store submission** (Play developer account, release-keystore custody, listing copy, content rating, legal) → owner-gated. The signed AAB is built locally now; uploading it is the owner step documented in `docs/superpowers/specs/2026-06-02-play-console-submission.md`.
+- **Icon/splash aesthetic A/B** → owner-gated, like every art/audio A/B.
 
 ## Hand off to the validator
 
