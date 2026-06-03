@@ -1,0 +1,44 @@
+{
+  "id": "deckbuilder-0001",
+  "name": "Arcane Duel",
+  "created_at": "2026-06-03T00:29:19.641Z",
+  "updated_at": "2026-06-03T00:29:19.641Z",
+  "status": "concept",
+  "concept": {
+    "genre": "roguelike deckbuilder",
+    "core_loop": "Turn-based arcane duel: each turn draw 5 spell cards, spend 3 mana to cast fire/ice/lightning cards against a telegraphed enemy, then end turn and the enemy acts. The live decision each turn is solving the enemy's telegraphed intent — set up Burn/Chill with fire/ice, then cash it in with lightning for bonus damage, while budgeting block vs offense. Between fights, pick 1 of 3 new cards to deepen the deck. Difficulty ramps across a ~5-node run (combat, combat, rest, elite+relic, boss). One excellent run, not endless.",
+    "mechanics": [
+      "draw/hand/discard piles with reshuffle",
+      "mana economy (3/turn)",
+      "block (resets each turn)",
+      "fire->Burn DoT",
+      "ice->Block+Chill (enemy skips attack)",
+      "lightning->bonus damage vs Burning/Chilled",
+      "enemy intent telegraph",
+      "pick-1-of-3 card reward",
+      "~5-node run map with rest/elite/boss",
+      "2 relics",
+      "win/lose screens + restart",
+      "meta save: unlock 1 card + ascension toggle on boss win"
+    ],
+    "art_direction": "Arcane-sigil SVG vector: deep indigo/violet base; element-accented spell cards (fire amber/orange, ice cyan/white, lightning electric-yellow/violet); runic circles, mana crystals, glowing sigils, glyph-bordered card frames with a cost gem and per-element sigil; a wide arcane-chamber background (indigo->violet gradient, glowing floor runic circle, floating motes) composed for the 1280x720 frame; distinct enemy silhouettes (imp, frost-wraith, golem, boss archmage). Feedback: cards arc to center on cast, number pop-ups, enemy hit-flash + screen shake scaled to damage, status icons with stack counts, enemy death dissolve.",
+    "target_platforms": ["android"],
+    "differentiation_notes": "A tight, hand-crafted vertical-slice deckbuilder built around one discoverable hook — fire/ice set up a status, lightning cashes it in — rather than a wide card pool. Landscape-native (the project's first non-portrait title), so the fanned hand and card frames read large.",
+    "theme": {
+      "premise": "a lone mage's arcane duel through a sequence of monsters, casting elemental spell cards",
+      "tone": "focused, mystical, escalating tension",
+      "mood_keywords": ["arcane", "elemental", "mystical", "strategic"],
+      "setting": "a candle-lit arcane duelling chamber ringed with glowing runes"
+    }
+  },
+  "build": {},
+  "assets": [],
+  "validation": {
+    "issues": []
+  },
+  "_reserved": {
+    "compliance": null,
+    "store": null,
+    "maintenance": null
+  }
+}
