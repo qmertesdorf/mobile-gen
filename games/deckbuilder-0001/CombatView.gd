@@ -13,6 +13,15 @@ extends Node2D
 #   End Turn:   bottom-right button rect
 #   Reward:     centered overlay (3 card faces + Skip)
 #   Win/Lose:   centered overlay
+#
+# Juice (Task 15):
+#   animate_play_card() — card arc/flash → damage/block pop-ups → shake
+#   animate_events()    — end-turn event chain (enemy attack flash, burn tick pop-ups)
+#   animate_enemy_death() — dissolve + particle burst before win/reward
+#   Screen shake        — decaying random offset in _process(), scaled to damage
+#   HP/mana tweens      — displayed values lerp toward real values
+#   Status pulses       — scale-pop when a status stack is added
+#   Intent telegraph    — fade/slide in at start of enemy turn
 
 const CardDB := preload("res://data/CardDB.gd")
 
@@ -80,6 +89,51 @@ var _default_font: Font = null
 # Mote seed positions (decorative — fixed so they don't jitter each frame)
 var _motes: Array = []
 
+# ─── Juice state ──────────────────────────────────────────────────────────────
+
+# Screen shake: decaying random offset applied to this node's position
+var _shake_magnitude: float = 0.0
+var _shake_offset: Vector2 = Vector2.ZERO
+const SHAKE_DECAY: float = 8.0   # per-second exponential decay
+
+# Enemy hit-flash: white modulate overlay, fades over time
+var _enemy_flash: float = 0.0   # 0..1, strength of white flash
+const FLASH_DECAY: float = 5.0
+
+# Tweened display values (animated toward real values)
+var _disp_player_hp: float = -1.0    # -1 = not yet initialised
+var _disp_player_block: float = 0.0
+var _disp_enemy_hp: float = -1.0
+const TWEEN_SPEED: float = 6.0   # lerp speed multiplier (per second)
+
+# Status pulse: Dictionary { "burn": float(0..1), "chill": float(0..1) }
+# Each channel decays — drawn as a scale-pop on the status icon
+var _status_pulse: Dictionary = {"burn": 0.0, "chill": 0.0}
+const PULSE_DECAY: float = 6.0
+
+# Intent telegraph: 0..1 fade-in value (reset to 0 at start of each enemy turn)
+var _intent_alpha: float = 1.0   # 1 = fully visible; new telegraph animates from 0→1
+var _intent_animating: bool = false
+
+# Enemy death dissolve: 0..1 (0=alive, 1=fully dissolved)
+var _death_dissolve: float = 0.0
+var _death_active: bool = false
+
+# Death particles: array of { pos, vel, color, life, max_life }
+var _death_particles: Array = []
+
+# Card cast ghost: transient arc animation driven purely by _process
+var _cast_ghost_active: bool = false
+var _cast_ghost_pos: Vector2 = Vector2.ZERO
+var _cast_ghost_target: Vector2 = Vector2(ENEMY_X, ENEMY_Y)
+var _cast_ghost_start: Vector2 = Vector2.ZERO
+var _cast_ghost_alpha: float = 0.0
+var _cast_ghost_t: float = 0.0        # 0..1 normalised progress
+const CAST_GHOST_DURATION: float = 0.22
+
+# Accumulated delta for _process-driven timers
+var _delta_acc: float = 0.0
+
 
 func _ready() -> void:
 	# Pre-generate mote positions (deterministic, not random per-frame)
@@ -89,12 +143,26 @@ func _ready() -> void:
 		_motes.append(Vector2(rng.randf_range(40.0, W - 40.0), rng.randf_range(40.0, H * 0.75)))
 
 
+# ─── Public API ───────────────────────────────────────────────────────────────
+
 func refresh(combat, state: int, rewards: Array) -> void:
+	var prev_combat = _combat
 	_combat = combat
 	_state = state
 	_rewards = rewards
 	if combat != null and _enemy_max_hp == 0:
 		_enemy_max_hp = combat.enemy.get("hp", 1)
+
+	# Initialise tweened display values on first combat (or restart)
+	if combat != null and _disp_player_hp < 0.0:
+		_disp_player_hp = float(combat.player_hp)
+		_disp_player_block = float(combat.player_block)
+		_disp_enemy_hp = float(combat.enemy.get("hp", 0))
+
+	# Reset juice on restart (prev_combat null → fresh run)
+	if prev_combat == null and combat != null:
+		_reset_juice()
+
 	queue_redraw()
 
 
@@ -124,6 +192,264 @@ func get_skip_rect() -> Rect2:
 	return Rect2(W * 0.5 - 80.0, H * 0.5 + 120.0, 160.0, 44.0)
 
 
+# ─── Juice: animate a card-play event chain ───────────────────────────────────
+# Called from Main BEFORE refresh(), so we still have the old hand state.
+
+func animate_play_card(card_rect: Rect2, events: Array, done_cb: Callable) -> void:
+	# 1. Fire the card arc ghost
+	_cast_ghost_start = card_rect.get_center()
+	_cast_ghost_pos = _cast_ghost_start
+	_cast_ghost_target = Vector2(ENEMY_X, ENEMY_Y)
+	_cast_ghost_alpha = 1.0
+	_cast_ghost_t = 0.0
+	_cast_ghost_active = true
+
+	# 2. After arc lands (CAST_GHOST_DURATION), show pop-ups + shake
+	var t := create_tween()
+	t.tween_interval(CAST_GHOST_DURATION)
+	t.tween_callback(func():
+		_process_events(events)
+		# Pop-ups need a small window to be visible, then call done
+		var t2 := create_tween()
+		t2.tween_interval(0.35)
+		t2.tween_callback(done_cb)
+	)
+
+
+func animate_events(events: Array, done_cb: Callable) -> void:
+	# End-turn: telegraph intent, then process events
+	_trigger_intent_telegraph()
+	var t := create_tween()
+	t.tween_interval(0.30)
+	t.tween_callback(func():
+		_process_events(events)
+		var t2 := create_tween()
+		t2.tween_interval(0.40)
+		t2.tween_callback(done_cb)
+	)
+
+
+func animate_enemy_death(done_cb: Callable) -> void:
+	_death_active = true
+	_death_dissolve = 0.0
+	_spawn_death_particles()
+
+	var t := create_tween()
+	# Dissolve over 0.55s
+	t.tween_method(func(v: float): _death_dissolve = v; queue_redraw(), 0.0, 1.0, 0.55)
+	t.tween_callback(func():
+		_death_active = false
+		_death_dissolve = 0.0
+		_death_particles = []
+		done_cb.call()
+	)
+
+
+# ─── Juice internal helpers ───────────────────────────────────────────────────
+
+func _reset_juice() -> void:
+	_shake_magnitude = 0.0
+	_shake_offset = Vector2.ZERO
+	_enemy_flash = 0.0
+	_disp_player_hp = -1.0
+	_disp_player_block = 0.0
+	_disp_enemy_hp = -1.0
+	_status_pulse = {"burn": 0.0, "chill": 0.0}
+	_intent_alpha = 1.0
+	_intent_animating = false
+	_death_active = false
+	_death_dissolve = 0.0
+	_death_particles = []
+	_cast_ghost_active = false
+	position = Vector2.ZERO
+
+
+func _process_events(events: Array) -> void:
+	for ev in events:
+		var etype: String = ev.get("type", "")
+		match etype:
+			"damage":
+				var amt: int = ev.get("amount", 0)
+				_trigger_enemy_hit(amt)
+				_spawn_pop_up(Vector2(ENEMY_X + randf_range(-20.0, 20.0), ENEMY_Y - 90.0),
+					"-%d" % amt, Color(1.0, 0.35, 0.20))
+			"block":
+				var amt: int = ev.get("amount", 0)
+				_spawn_pop_up(Vector2(120.0, 555.0 + randf_range(-10.0, 10.0)),
+					"+%d BLK" % amt, COL_BLOCK)
+			"status":
+				var stat: String = ev.get("status", "")
+				var amt: int = ev.get("amount", 0)
+				if stat == "burn":
+					_status_pulse["burn"] = 1.0
+					_spawn_pop_up(Vector2(ENEMY_X - 20.0, ENEMY_Y + 100.0),
+						"Burn +%d" % amt, COL_FIRE)
+				elif stat == "chill":
+					_status_pulse["chill"] = 1.0
+					_spawn_pop_up(Vector2(ENEMY_X + 20.0, ENEMY_Y + 100.0),
+						"Chill +%d" % amt, COL_ICE)
+			"burn_tick":
+				var amt: int = ev.get("amount", 0)
+				_trigger_enemy_hit(int(float(amt) * 0.5))  # softer shake for DoT
+				_spawn_pop_up(Vector2(ENEMY_X + randf_range(-15.0, 15.0), ENEMY_Y - 70.0),
+					"~%d" % amt, COL_FIRE)
+			"enemy_attack":
+				var dealt: int = ev.get("damage_dealt", 0)
+				if dealt > 0:
+					# Flash the player HUD area
+					_spawn_pop_up(Vector2(120.0, 570.0),
+						"-%d HP" % dealt, Color(1.0, 0.3, 0.3))
+			"enemy_defend":
+				var amt: int = ev.get("amount", 0)
+				_spawn_pop_up(Vector2(ENEMY_X, ENEMY_Y + 110.0),
+					"+%d DEF" % amt, COL_BLOCK)
+			"chilled_skip":
+				_spawn_pop_up(Vector2(ENEMY_X, ENEMY_Y - 100.0),
+					"FROZEN!", COL_ICE)
+
+
+func _trigger_enemy_hit(magnitude: int) -> void:
+	# Shake: clamp to max 20px for very high damage
+	_shake_magnitude = clamp(float(magnitude) * 0.8, 2.0, 20.0)
+	# Hit-flash
+	_enemy_flash = 1.0
+	queue_redraw()
+
+
+func _trigger_intent_telegraph() -> void:
+	# Slide intent in from 0→1 alpha
+	_intent_alpha = 0.0
+	_intent_animating = true
+	var t := create_tween()
+	t.tween_method(func(v: float): _intent_alpha = v; queue_redraw(), 0.0, 1.0, 0.25)
+	t.tween_callback(func(): _intent_animating = false)
+
+
+func _spawn_pop_up(pos: Vector2, text: String, col: Color) -> void:
+	# Pop-ups are Label nodes that tween upward + fade, then free themselves.
+	# Guard: ThemeDB.fallback_font must exist (always true in Godot 4, headless too).
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_color_override("font_color", col)
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.position = pos
+	add_child(lbl)
+
+	var t := create_tween()
+	# Rise 55px over 0.55s, while fading to transparent
+	t.set_parallel(true)
+	t.tween_property(lbl, "position:y", pos.y - 55.0, 0.55)
+	t.tween_property(lbl, "modulate:a", 0.0, 0.55)
+	t.set_parallel(false)
+	t.tween_callback(lbl.queue_free)
+
+
+func _spawn_death_particles() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 0xDEAD
+	_death_particles = []
+	var colors: Array = [
+		Color(0.8, 0.4, 1.0), Color(1.0, 0.6, 0.2), Color(0.4, 0.8, 1.0),
+		Color(1.0, 1.0, 0.5), Color(0.6, 0.3, 1.0)
+	]
+	for i in 24:
+		var angle: float = rng.randf() * TAU
+		var speed: float = rng.randf_range(40.0, 140.0)
+		_death_particles.append({
+			"pos": Vector2(ENEMY_X, ENEMY_Y),
+			"vel": Vector2(cos(angle), sin(angle)) * speed,
+			"color": colors[i % colors.size()],
+			"life": 0.0,
+			"max_life": rng.randf_range(0.4, 0.7)
+		})
+
+
+# ─── _process: per-frame decay for shake, flash, tweens ──────────────────────
+
+func _process(delta: float) -> void:
+	var dirty: bool = false
+
+	# Shake decay
+	if _shake_magnitude > 0.01:
+		_shake_magnitude = move_toward(_shake_magnitude, 0.0, _shake_magnitude * SHAKE_DECAY * delta)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = Time.get_ticks_msec()
+		_shake_offset = Vector2(
+			rng.randf_range(-1.0, 1.0),
+			rng.randf_range(-1.0, 1.0)
+		) * _shake_magnitude
+		position = _shake_offset
+		dirty = true
+	elif position != Vector2.ZERO:
+		position = Vector2.ZERO
+		dirty = true
+
+	# Enemy hit-flash decay
+	if _enemy_flash > 0.001:
+		_enemy_flash = move_toward(_enemy_flash, 0.0, _enemy_flash * FLASH_DECAY * delta)
+		dirty = true
+
+	# HP/mana display tween (lerp displayed values toward real values)
+	if _combat != null:
+		var real_php: float = float(_combat.player_hp)
+		var real_blk: float = float(_combat.player_block)
+		var real_ehp: float = float(_combat.enemy.get("hp", 0))
+
+		if _disp_player_hp < 0.0:
+			_disp_player_hp = real_php
+		if abs(_disp_player_hp - real_php) > 0.5:
+			_disp_player_hp = lerp(_disp_player_hp, real_php, TWEEN_SPEED * delta)
+			dirty = true
+		else:
+			_disp_player_hp = real_php
+
+		if abs(_disp_player_block - real_blk) > 0.5:
+			_disp_player_block = lerp(_disp_player_block, real_blk, TWEEN_SPEED * delta)
+			dirty = true
+		else:
+			_disp_player_block = real_blk
+
+		if _disp_enemy_hp < 0.0:
+			_disp_enemy_hp = real_ehp
+		if abs(_disp_enemy_hp - real_ehp) > 0.5:
+			_disp_enemy_hp = lerp(_disp_enemy_hp, real_ehp, TWEEN_SPEED * delta)
+			dirty = true
+		else:
+			_disp_enemy_hp = real_ehp
+
+	# Status pulse decay
+	for key in _status_pulse.keys():
+		if _status_pulse[key] > 0.001:
+			_status_pulse[key] = move_toward(_status_pulse[key], 0.0,
+				_status_pulse[key] * PULSE_DECAY * delta)
+			dirty = true
+
+	# Cast ghost arc
+	if _cast_ghost_active:
+		_cast_ghost_t += delta / CAST_GHOST_DURATION
+		if _cast_ghost_t >= 1.0:
+			_cast_ghost_t = 1.0
+			_cast_ghost_active = false
+		# Parabolic arc: lerp pos + arc up in y
+		var p := _cast_ghost_t
+		_cast_ghost_pos = _cast_ghost_start.lerp(_cast_ghost_target, p)
+		# Arc lift: sin(p*PI)*-80 (peaks at midpoint)
+		_cast_ghost_pos.y += sin(p * PI) * -80.0
+		_cast_ghost_alpha = 1.0 - p
+		dirty = true
+
+	# Death particles
+	if _death_active and not _death_particles.is_empty():
+		for particle in _death_particles:
+			particle["life"] += delta
+			particle["pos"] += particle["vel"] * delta
+			particle["vel"] = particle["vel"] * (1.0 - 2.0 * delta)  # drag
+		dirty = true
+
+	if dirty:
+		queue_redraw()
+
+
 # ─── _draw ────────────────────────────────────────────────────────────────────
 
 func _draw() -> void:
@@ -143,8 +469,10 @@ func _draw() -> void:
 		return
 
 	_draw_enemy()
+	_draw_death_particles()
 	_draw_player_hud()
 	_draw_hand()
+	_draw_cast_ghost()
 	_draw_pile_counts()
 	_draw_end_turn_button()
 
@@ -198,6 +526,11 @@ func _draw_enemy() -> void:
 	var e_block: int = en.get("block", 0)
 	var e_max_hp: int = _enemy_max_hp if _enemy_max_hp > 0 else e_hp
 
+	# Death dissolve: fade out the entire enemy silhouette
+	var dissolve_alpha: float = 1.0 - _death_dissolve
+	if dissolve_alpha <= 0.001:
+		return
+
 	# Silhouette — a simple imp/demon shape using polylines
 	# Body: slightly organic blob (octagon-ish polygon)
 	var body_pts: PackedVector2Array = PackedVector2Array([
@@ -210,37 +543,50 @@ func _draw_enemy() -> void:
 		Vector2(ENEMY_X + 50, ENEMY_Y + 20),
 		Vector2(ENEMY_X + 30, ENEMY_Y + 80),
 	])
-	# Glow halo behind silhouette
-	draw_colored_polygon(body_pts, Color(0.70, 0.30, 1.00, 0.22))
-	# Fill with the actual silhouette colour
-	draw_colored_polygon(body_pts, Color(0.22, 0.15, 0.38))
-	# Outline
-	draw_polyline(body_pts, Color(0.75, 0.50, 1.00, 0.85), 2.0, true)
 
-	# Glowing eyes
+	# Hit-flash: overlay white on top of silhouette to simulate flash
+	var flash: float = _enemy_flash
+	var base_col := Color(0.22, 0.15, 0.38, dissolve_alpha)
+	var glow_col := Color(0.70, 0.30, 1.00, 0.22 * dissolve_alpha)
+	var fill_col := base_col.lerp(Color(1.0, 1.0, 1.0, dissolve_alpha), flash)
+	var outline_col := Color(0.75, 0.50, 1.00, 0.85 * dissolve_alpha)
+
+	# Glow halo behind silhouette
+	draw_colored_polygon(body_pts, glow_col)
+	# Fill with the actual silhouette colour (white-flashed)
+	draw_colored_polygon(body_pts, fill_col)
+	# Outline
+	draw_polyline(body_pts, outline_col, 2.0, true)
+
+	# Glowing eyes — dim during dissolve
+	var eye_alpha: float = dissolve_alpha
 	var eye_y: float = ENEMY_Y - 55.0
-	draw_circle(Vector2(ENEMY_X - 12, eye_y), 6.0, Color(1.0, 0.3, 0.1, 0.35))
-	draw_circle(Vector2(ENEMY_X - 12, eye_y), 4.0, Color(1.0, 0.5, 0.2))
-	draw_circle(Vector2(ENEMY_X + 12, eye_y), 6.0, Color(1.0, 0.3, 0.1, 0.35))
-	draw_circle(Vector2(ENEMY_X + 12, eye_y), 4.0, Color(1.0, 0.5, 0.2))
+	draw_circle(Vector2(ENEMY_X - 12, eye_y), 6.0, Color(1.0, 0.3, 0.1, 0.35 * eye_alpha))
+	draw_circle(Vector2(ENEMY_X - 12, eye_y), 4.0, Color(1.0, 0.5, 0.2, eye_alpha))
+	draw_circle(Vector2(ENEMY_X + 12, eye_y), 6.0, Color(1.0, 0.3, 0.1, 0.35 * eye_alpha))
+	draw_circle(Vector2(ENEMY_X + 12, eye_y), 4.0, Color(1.0, 0.5, 0.2, eye_alpha))
 
 	# Block badge (if any)
 	if e_block > 0:
-		_draw_badge(Vector2(ENEMY_X + 55, ENEMY_Y + 40), str(e_block), COL_BLOCK)
+		_draw_badge(Vector2(ENEMY_X + 55, ENEMY_Y + 40), str(e_block),
+			Color(COL_BLOCK.r, COL_BLOCK.g, COL_BLOCK.b, dissolve_alpha))
 
-	# HP bar above enemy
+	# HP bar above enemy — uses tweened display value
 	var bar_w: float = 120.0
 	var bar_h: float = 12.0
 	var bar_x: float = ENEMY_X - bar_w * 0.5
 	var bar_y: float = ENEMY_Y - 105.0
-	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), COL_HP_BG)
-	var hp_frac: float = clamp(float(e_hp) / float(e_max_hp), 0.0, 1.0)
-	draw_rect(Rect2(bar_x, bar_y, bar_w * hp_frac, bar_h), COL_HP_BAR)
-	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.5, 0.5, 0.5, 0.6), false)
-	_draw_text(Vector2(ENEMY_X, bar_y - 2.0), "%s  %d/%d" % [e_name, e_hp, e_max_hp],
-		14, COL_WHITE, true)
+	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(COL_HP_BG.r, COL_HP_BG.g, COL_HP_BG.b, dissolve_alpha))
+	var disp_hp: float = _disp_enemy_hp if _disp_enemy_hp >= 0.0 else float(e_hp)
+	var hp_frac: float = clamp(disp_hp / float(e_max_hp), 0.0, 1.0)
+	draw_rect(Rect2(bar_x, bar_y, bar_w * hp_frac, bar_h),
+		Color(COL_HP_BAR.r, COL_HP_BAR.g, COL_HP_BAR.b, dissolve_alpha))
+	draw_rect(Rect2(bar_x, bar_y, bar_w, bar_h), Color(0.5, 0.5, 0.5, 0.6 * dissolve_alpha), false)
+	_draw_text_alpha(Vector2(ENEMY_X, bar_y - 2.0), "%s  %d/%d" % [e_name, e_hp, e_max_hp],
+		14, COL_WHITE, true, dissolve_alpha)
 
-	# Intent above HP bar
+	# Intent above HP bar — with telegraph alpha
+	var intent_a: float = _intent_alpha * dissolve_alpha
 	var intent: Dictionary = en.get("intent", {})
 	var intent_type: String = intent.get("type", "")
 	var intent_val: int = intent.get("value", 0)
@@ -258,21 +604,48 @@ func _draw_enemy() -> void:
 			intent_col = Color(1.00, 0.70, 0.10)
 		_:
 			intent_str = "?"
-	_draw_text(Vector2(ENEMY_X, bar_y - 22.0), intent_str, 15, intent_col, true)
+	# Slide in from 6px above when animating
+	var intent_y_off: float = (1.0 - _intent_alpha) * -6.0
+	_draw_text_alpha(Vector2(ENEMY_X, bar_y - 22.0 + intent_y_off),
+		intent_str, 15, intent_col, true, intent_a)
 
-	# Status icons
+	# Status icons with pulse scale-pop
 	var statuses: Dictionary = en.get("statuses", {})
 	var burn_n: int = statuses.get("burn", 0)
 	var chill_n: int = statuses.get("chill", 0)
 	var sx: float = ENEMY_X - 35.0
 	var sy: float = ENEMY_Y + 92.0
 	if burn_n > 0:
-		draw_circle(Vector2(sx, sy), 8.0, Color(1.0, 0.4, 0.1, 0.80))
-		_draw_text(Vector2(sx + 14, sy + 5), str(burn_n), 12, Color(1.0, 0.7, 0.3))
+		var pulse_s: float = 1.0 + _status_pulse.get("burn", 0.0) * 0.5
+		var r: float = 8.0 * pulse_s
+		draw_circle(Vector2(sx, sy), r, Color(1.0, 0.4, 0.1, 0.80 * dissolve_alpha))
+		_draw_text_alpha(Vector2(sx + 14, sy + 5), str(burn_n), 12,
+			Color(1.0, 0.7, 0.3, dissolve_alpha), false, dissolve_alpha)
 		sx += 36.0
 	if chill_n > 0:
-		draw_circle(Vector2(sx, sy), 8.0, Color(0.3, 0.8, 1.0, 0.80))
-		_draw_text(Vector2(sx + 14, sy + 5), str(chill_n), 12, Color(0.5, 0.9, 1.0))
+		var pulse_s: float = 1.0 + _status_pulse.get("chill", 0.0) * 0.5
+		var r: float = 8.0 * pulse_s
+		draw_circle(Vector2(sx, sy), r, Color(0.3, 0.8, 1.0, 0.80 * dissolve_alpha))
+		_draw_text_alpha(Vector2(sx + 14, sy + 5), str(chill_n), 12,
+			Color(0.5, 0.9, 1.0, dissolve_alpha), false, dissolve_alpha)
+
+
+# ─── Death particles (drawn separately so they outlast the dissolving body) ───
+
+func _draw_death_particles() -> void:
+	if _death_particles.is_empty():
+		return
+	for particle in _death_particles:
+		var life: float = particle["life"]
+		var max_life: float = particle["max_life"]
+		if life >= max_life:
+			continue
+		var frac: float = life / max_life
+		var alpha: float = 1.0 - frac
+		var col: Color = particle["color"]
+		col.a = alpha
+		var r: float = lerp(5.0, 1.5, frac)
+		draw_circle(particle["pos"], r, col)
 
 
 # ─── Player HUD ───────────────────────────────────────────────────────────────
@@ -282,7 +655,6 @@ func _draw_player_hud() -> void:
 		return
 	var php: int   = _combat.player_hp
 	var phmax: int = _combat.player_max_hp
-	var blk: int   = _combat.player_block
 	var mn: int    = _combat.mana
 	var mnmax: int = _combat.mana_max
 
@@ -293,15 +665,16 @@ func _draw_player_hud() -> void:
 	var ph_box: float = 100.0
 	draw_rect(Rect2(px, py, pw, ph_box), COL_PANEL)
 
-	# HP
+	# HP — tweened width
 	_draw_text(Vector2(px + 10, py + 18), "HP", 13, COL_HP_BAR)
 	var hp_w: float = pw - 20.0
 	draw_rect(Rect2(px + 10, py + 22, hp_w, 10.0), COL_HP_BG)
-	var hp_frac: float = clamp(float(php) / float(phmax), 0.0, 1.0)
+	var disp_hp: float = _disp_player_hp if _disp_player_hp >= 0.0 else float(php)
+	var hp_frac: float = clamp(disp_hp / float(phmax), 0.0, 1.0)
 	draw_rect(Rect2(px + 10, py + 22, hp_w * hp_frac, 10.0), COL_HP_BAR)
 	_draw_text(Vector2(px + 10, py + 38), "%d / %d" % [php, phmax], 12, COL_WHITE)
 
-	# Mana orbs
+	# Mana orbs — filled orbs tween on mana change (simple immediate draw, no tween needed)
 	_draw_text(Vector2(px + 10, py + 55), "Mana", 12, COL_MANA)
 	for i in mnmax:
 		var ox: float = px + 12.0 + i * 22.0
@@ -312,9 +685,10 @@ func _draw_player_hud() -> void:
 		else:
 			draw_arc(Vector2(ox, oy), 8.0, 0.0, TAU, 16, Color(0.35, 0.45, 0.65, 0.6), 1.5)
 
-	# Block
-	if blk > 0:
-		_draw_text(Vector2(px + 10, py + 88), "Block %d" % blk, 12, COL_BLOCK)
+	# Block — tweened display value
+	var disp_blk: int = int(round(_disp_player_block))
+	if disp_blk > 0:
+		_draw_text(Vector2(px + 10, py + 88), "Block %d" % disp_blk, 12, COL_BLOCK)
 
 
 # ─── Hand ─────────────────────────────────────────────────────────────────────
@@ -337,7 +711,6 @@ func _draw_hand() -> void:
 		var cy: float = CARD_HAND_Y
 		var rect := Rect2(cx - CARD_W * 0.5, cy - CARD_H * 0.5, CARD_W, CARD_H)
 
-		var elem: String = card_data.get("element", "neutral")
 		var cost: int = card_data.get("cost", 0)
 		var affordable: bool = cost <= mn
 
@@ -408,33 +781,32 @@ func _draw_card_face(rect: Rect2, card_data: Dictionary, affordable: bool, selec
 		draw_rect(rect, Color(0.0, 0.0, 0.0, 0.45))
 
 
-func _element_color(elem: String) -> Color:
-	match elem:
-		"fire":      return COL_FIRE
-		"ice":       return COL_ICE
-		"lightning": return COL_LIGHTNING
-		_:           return COL_NEUTRAL
+# ─── Cast ghost (card arc) ─────────────────────────────────────────────────────
 
-
-func _effect_summary(effect: Dictionary, elem: String) -> Array:
-	var lines: Array = []
-	if effect.has("damage"):
-		var d: int = effect.get("damage")
-		var txt: String = "DMG %d" % d
-		if effect.has("lightning_bonus"):
-			txt += "+%d" % effect.get("lightning_bonus")
-		lines.append(txt)
-	if effect.has("block"):
-		lines.append("Block +%d" % effect.get("block"))
-	if effect.has("burn"):
-		lines.append("Burn +%d" % effect.get("burn"))
-	if effect.has("chill"):
-		lines.append("Chill +%d" % effect.get("chill"))
-	if effect.has("draw"):
-		lines.append("Draw %d" % effect.get("draw"))
-	if effect.has("power"):
-		lines.append("POWER")
-	return lines
+func _draw_cast_ghost() -> void:
+	if not _cast_ghost_active:
+		return
+	# Draw a glowing rhombus at the ghost position with fading alpha
+	var col := Color(1.0, 0.95, 0.5, _cast_ghost_alpha)
+	var glow_col := Color(1.0, 0.85, 0.3, _cast_ghost_alpha * 0.4)
+	var pos := _cast_ghost_pos
+	var sz: float = 18.0 * (1.0 - _cast_ghost_t * 0.4)
+	# Outer glow
+	draw_circle(pos, sz + 6.0, glow_col)
+	# Card ghost rhombus
+	var pts := PackedVector2Array([
+		Vector2(pos.x, pos.y - sz),
+		Vector2(pos.x + sz * 0.6, pos.y),
+		Vector2(pos.x, pos.y + sz),
+		Vector2(pos.x - sz * 0.6, pos.y),
+	])
+	draw_colored_polygon(pts, col)
+	# Trail dot slightly behind
+	if _cast_ghost_t > 0.1:
+		var trail_p: float = _cast_ghost_t - 0.1
+		var trail_pos := _cast_ghost_start.lerp(_cast_ghost_target, trail_p)
+		trail_pos.y += sin(trail_p * PI) * -80.0
+		draw_circle(trail_pos, 5.0, Color(1.0, 0.8, 0.3, _cast_ghost_alpha * 0.3))
 
 
 # ─── Pile counts ──────────────────────────────────────────────────────────────
@@ -517,3 +889,38 @@ func _draw_text(pos: Vector2, text: String, size: int, col: Color, centered: boo
 		var tw: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
 		off.x = -tw * 0.5
 	draw_string(font, pos + off, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, col)
+
+
+func _draw_text_alpha(pos: Vector2, text: String, size: int, col: Color,
+		centered: bool = false, alpha: float = 1.0) -> void:
+	var c := Color(col.r, col.g, col.b, col.a * alpha)
+	_draw_text(pos, text, size, c, centered)
+
+
+func _element_color(elem: String) -> Color:
+	match elem:
+		"fire":      return COL_FIRE
+		"ice":       return COL_ICE
+		"lightning": return COL_LIGHTNING
+		_:           return COL_NEUTRAL
+
+
+func _effect_summary(effect: Dictionary, elem: String) -> Array:
+	var lines: Array = []
+	if effect.has("damage"):
+		var d: int = effect.get("damage")
+		var txt: String = "DMG %d" % d
+		if effect.has("lightning_bonus"):
+			txt += "+%d" % effect.get("lightning_bonus")
+		lines.append(txt)
+	if effect.has("block"):
+		lines.append("Block +%d" % effect.get("block"))
+	if effect.has("burn"):
+		lines.append("Burn +%d" % effect.get("burn"))
+	if effect.has("chill"):
+		lines.append("Chill +%d" % effect.get("chill"))
+	if effect.has("draw"):
+		lines.append("Draw %d" % effect.get("draw"))
+	if effect.has("power"):
+		lines.append("POWER")
+	return lines

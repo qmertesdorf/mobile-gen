@@ -25,6 +25,9 @@ var _combat     # CombatState
 var _state: State = State.COMBAT
 var _rewards: Array = []
 
+# Juice: block input while animations are running so fast taps don't desync
+var _animating: bool = false
+
 
 func _ready() -> void:
 	_start_run()
@@ -35,6 +38,7 @@ func _start_run() -> void:
 	_run.start_run(RUN_SEED)
 	_combat = null
 	_rewards = []
+	_animating = false
 	_begin_current_node()
 
 
@@ -76,6 +80,10 @@ func _refresh() -> void:
 # ─── Input routing ────────────────────────────────────────────────────────────
 
 func _input(event: InputEvent) -> void:
+	# Block input while juice animations are running
+	if _animating:
+		return
+
 	var pressed: bool = false
 	var pos: Vector2 = Vector2.ZERO
 
@@ -111,8 +119,12 @@ func _handle_combat_tap(pos: Vector2) -> void:
 
 	# End Turn button?
 	if _view.get_end_turn_rect().has_point(pos):
-		var _events: Array = _combat.end_turn()
-		_check_combat_outcome()
+		_animating = true
+		var events: Array = _combat.end_turn()
+		_view.animate_events(events, func():
+			_animating = false
+			_check_combat_outcome()
+		)
 		return
 
 	# Card in hand?
@@ -137,9 +149,17 @@ func _try_play_card(idx: int) -> void:
 	if cost > _combat.mana:
 		return   # Not affordable — ignore tap
 
-	var _events: Array = _combat.play_card(idx)
+	# Capture card rect before removing it from hand
+	var total: int = _combat.hand.size()
+	var card_rect: Rect2 = _view.get_card_rect(idx, total)
+
+	_animating = true
+	var events: Array = _combat.play_card(idx)
 	_view.selected_card_idx = -1
-	_check_combat_outcome()
+	_view.animate_play_card(card_rect, events, func():
+		_animating = false
+		_check_combat_outcome()
+	)
 
 
 func _check_combat_outcome() -> void:
@@ -151,13 +171,22 @@ func _check_combat_outcome() -> void:
 		var ntype: String = node.get("type", "")
 		if ntype == "boss":
 			_run.on_boss_defeated()
-			_state = State.WIN
-			_refresh()
+			# Play death dissolve then show WIN
+			_animating = true
+			_view.animate_enemy_death(func():
+				_animating = false
+				_state = State.WIN
+				_refresh()
+			)
 			return
-		# Non-boss win: offer rewards
-		_rewards = _run.offer_rewards()
-		_state = State.REWARD
-		_refresh()
+		# Non-boss win: death anim then reward
+		_animating = true
+		_view.animate_enemy_death(func():
+			_animating = false
+			_rewards = _run.offer_rewards()
+			_state = State.REWARD
+			_refresh()
+		)
 		return
 
 	if _combat.is_lost():
