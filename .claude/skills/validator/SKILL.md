@@ -50,6 +50,23 @@ godot --headless --path games/<id>/ --script res://selftest.gd
 - **FAIL** = `SELFTEST FAIL: <reason>` or non-zero exit. Record the reason verbatim in `issues`, set `core_loop_functional: false`, `set-status <id> failed`, and STOP — attribute it to `builder` with the precise assertion that failed (e.g. "builder: a 3-in-a-row swap did not clear any cells"). This is a POC success: a logic bug was caught automatically.
 - **No `selftest.gd` for a logic-heavy genre** is itself a `builder` finding — note it ("shipped no automated proof its loop works"), then advance to `validated` on the clean run and lean harder on Method 2. For a genuinely trivial arcade loop, absence is fine.
 
+## Method 1.6 — Turn-based logic self-test (automated; REQUIRED for turn-based genres)
+
+Method 1 (clean headless run) and a real-time `_process` self-test cannot exercise a **turn-based** engine — nothing advances without a scripted turn, so a deckbuilder/tactics title can run "clean" for 120 frames while its combat math is wrong. For turn-based genres, `builder` emits a `selftest.gd` that drives **scripted turns through the rules engine with a fixed RNG seed** (see builder's "Turn-based / scripted-turn genres"). Run it exactly like Method 1.5:
+
+```
+godot --headless --path games/<id>/ --script res://selftest.gd
+```
+
+- **PASS** = exit 0 AND output contains `SELFTEST OK`. The scripted turn proved: opening hand drawn, a card spent mana + dealt its damage, a status (Burn/Chill) applied, the cross-element payoff (Lightning bonus vs an afflicted target) fired, the enemy acted and statuses ticked on `end_turn`, a win/lose transition resolved, the reward pick-1-of-3 advanced the run, and the meta save wrote `user://save.json`. Advance:
+  ```
+  node tools/manifest.mjs merge <id> "{\"validation\": {\"core_loop_functional\": true}}"
+  node tools/manifest.mjs set-status <id> validated
+  ```
+- **FAIL** = `SELFTEST FAIL: <reason>` or non-zero exit. Record the reason verbatim in `issues`, set `core_loop_functional: false`, `set-status <id> failed`, and STOP — attribute it to `builder` with the precise assertion that failed (e.g. "builder: Lightning card dealt base damage to a Burning enemy — the combo-payoff branch never fired"). Catching a deckbuilder math bug headlessly is a POC success.
+
+Determinism is mandatory: the seed is fixed in `selftest.gd`, so a flaky self-test is itself a `builder` finding (an unseeded RNG path in the engine). The human playtest (Method 2) still gates `playable` — the self-test proves the rules are correct, the human confirms it *feels* like a duel worth replaying.
+
 ## Method 2 — Human playtest (manual now)
 
 4. Ask the owner to open the project in the Godot editor and play for ~60 seconds, confirming the core loop from `concept.core_loop` (e.g. tap → jump, score climbs, game-over → restart works).
