@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#9a6bff" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#9a6bff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rock" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a3a6a"/>
+      <stop offset="1" stop-color="#2c2046"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="128" rx="105" ry="100" fill="url(#aura)"/>
+  <!-- Massive arms / fists -->
+  <path d="M58 110 L40 120 L36 178 L70 184 L78 132 Z" fill="url(#rock)" stroke="#7a64a0" stroke-width="2.5"/>
+  <path d="M182 110 L200 120 L204 178 L170 184 L162 132 Z" fill="url(#rock)" stroke="#7a64a0" stroke-width="2.5"/>
+  <rect x="34" y="176" width="40" height="26" rx="5" fill="#37294f" stroke="#7a64a0" stroke-width="2"/>
+  <rect x="166" y="176" width="40" height="26" rx="5" fill="#37294f" stroke="#7a64a0" stroke-width="2"/>
+  <!-- Broad blocky torso -->
+  <path d="M74 96 L166 96 L176 130 L168 200 L72 200 L64 130 Z"
+        fill="url(#rock)" stroke="#7a64a0" stroke-width="3"/>
+  <!-- Heavy shoulders -->
+  <path d="M70 96 L60 78 L96 72 L100 96 Z" fill="#42325f" stroke="#7a64a0" stroke-width="2"/>
+  <path d="M170 96 L180 78 L144 72 L140 96 Z" fill="#42325f" stroke="#7a64a0" stroke-width="2"/>
+  <!-- Small head set low between shoulders -->
+  <rect x="102" y="66" width="36" height="34" rx="7" fill="#3a2c56" stroke="#7a64a0" stroke-width="2.5"/>
+  <!-- Glowing rune eyes (single visor slit feel) -->
+  <ellipse cx="112" cy="84" rx="5.5" ry="6" fill="#c9aaff"/>
+  <ellipse cx="128" cy="84" rx="5.5" ry="6" fill="#c9aaff"/>
+  <ellipse cx="112" cy="84" rx="2.4" ry="3" fill="#9a6bff"/>
+  <ellipse cx="128" cy="84" rx="2.4" ry="3" fill="#9a6bff"/>
+  <!-- Glowing energy cracks across the torso -->
+  <g stroke="#b48bff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.85">
+    <path d="M120 110 L112 134 L126 150 L118 176"/>
+    <path d="M112 134 L94 142"/>
+    <path d="M126 150 L148 156"/>
+  </g>
+  <!-- Core rune -->
+  <circle cx="120" cy="140" r="9" fill="#9a6bff" opacity="0.6"/>
+  <circle cx="120" cy="140" r="9" fill="none" stroke="#d8c4ff" stroke-width="2"/>
+</svg>

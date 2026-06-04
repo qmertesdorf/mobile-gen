@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="320" viewBox="0 0 240 320">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a1c44"/>
+      <stop offset="1" stop-color="#1b1230"/>
+    </linearGradient>
+    <radialGradient id="sig" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff9a2e" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#ff9a2e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+  <!-- Outer glow -->
+  <rect x="6" y="6" width="228" height="308" rx="18" fill="none" stroke="#ff9a2e" stroke-width="7" opacity="0.30" filter="url(#glow)"/>
+  <!-- Body -->
+  <rect x="8" y="8" width="224" height="304" rx="16" fill="url(#body)"/>
+  <!-- Element border (double stroke) -->
+  <rect x="8" y="8" width="224" height="304" rx="16" fill="none" stroke="#ff9a2e" stroke-width="3"/>
+  <rect x="15" y="15" width="210" height="290" rx="11" fill="none" stroke="#ffb259" stroke-width="1.2" opacity="0.5"/>
+  <!-- Top element bar -->
+  <path d="M8 24 Q8 8 24 8 H216 Q232 8 232 24 V30 H8 Z" fill="#ff9a2e" opacity="0.92"/>
+  <!-- Type band -->
+  <rect x="22" y="66" width="196" height="22" rx="6" fill="#ff9a2e" opacity="0.14"/>
+  <line x1="30" y1="66" x2="30" y2="88" stroke="#ff9a2e" stroke-width="2" opacity="0.5"/>
+  <line x1="210" y1="66" x2="210" y2="88" stroke="#ff9a2e" stroke-width="2" opacity="0.5"/>
+  <!-- Cost socket (code draws the gem on top) -->
+  <circle cx="30" cy="34" r="20" fill="#120a22"/>
+  <circle cx="30" cy="34" r="20" fill="none" stroke="#ffb259" stroke-width="2" opacity="0.7"/>
+  <!-- Sigil watermark: rising flame -->
+  <ellipse cx="120" cy="208" rx="78" ry="78" fill="url(#sig)"/>
+  <g fill="none" stroke="#ff9a2e" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round" opacity="0.85">
+    <path d="M120 150 C150 184 152 214 120 250 C88 214 90 184 120 150 Z"/>
+    <path d="M120 196 C133 214 134 230 120 250 C106 230 107 214 120 196 Z" stroke="#ffd27a" stroke-width="3"/>
+  </g>
+  <!-- Corner flourishes -->
+  <g stroke="#ffb259" stroke-width="2" opacity="0.45" fill="none">
+    <path d="M205 286 h14 v-14"/>
+    <path d="M35 286 h-14 v-14"/>
+  </g>
+</svg>

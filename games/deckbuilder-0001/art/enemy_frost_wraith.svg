@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#4ce1ff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#4ce1ff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e4068"/>
+      <stop offset="1" stop-color="#1a2342"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="120" rx="100" ry="105" fill="url(#aura)"/>
+  <!-- Floating tattered robe (no legs, wispy bottom) -->
+  <path d="M120 40
+           C92 42 78 64 78 96
+           C78 130 70 168 60 204
+           L74 188 L84 210 L96 190 L108 212 L120 192
+           L132 212 L144 190 L156 210 L166 188 L180 204
+           C170 168 162 130 162 96
+           C162 64 148 42 120 40 Z"
+        fill="url(#robe)" stroke="#5fa6d6" stroke-width="2.5"/>
+  <!-- Long sleeves / arms -->
+  <path d="M84 104 Q56 130 66 168 Q78 140 92 134 Z" fill="#26304f" stroke="#5fa6d6" stroke-width="1.5"/>
+  <path d="M156 104 Q184 130 174 168 Q162 140 148 134 Z" fill="#26304f" stroke="#5fa6d6" stroke-width="1.5"/>
+  <!-- Hood -->
+  <path d="M120 36 C100 38 88 58 90 84 C96 74 108 70 120 70 C132 70 144 74 150 84 C152 58 140 38 120 36 Z"
+        fill="#212a4a" stroke="#5fa6d6" stroke-width="2.5"/>
+  <!-- Dark hood interior -->
+  <path d="M104 70 Q120 60 136 70 Q132 96 120 100 Q108 96 104 70 Z" fill="#0c1228"/>
+  <!-- Glowing rune eyes under hood -->
+  <ellipse cx="112" cy="80" rx="5.5" ry="6.5" fill="#aef3ff"/>
+  <ellipse cx="128" cy="80" rx="5.5" ry="6.5" fill="#aef3ff"/>
+  <ellipse cx="112" cy="80" rx="2.4" ry="3.2" fill="#4ce1ff"/>
+  <ellipse cx="128" cy="80" rx="2.4" ry="3.2" fill="#4ce1ff"/>
+  <!-- Ice shards floating around -->
+  <g fill="#9af0ff" opacity="0.85">
+    <path d="M60 96 l4 -12 l4 12 l-4 6 z"/>
+    <path d="M178 100 l4 -14 l4 14 l-4 6 z"/>
+    <path d="M150 150 l3 -9 l3 9 l-3 5 z"/>
+  </g>
+</svg>

@@ -2,7 +2,7 @@
   "id": "deckbuilder-0001",
   "name": "Arcane Duel",
   "created_at": "2026-06-03T00:29:19.641Z",
-  "updated_at": "2026-06-03T03:00:29.988Z",
+  "updated_at": "2026-06-03T03:15:12.232Z",
   "status": "playable",
   "concept": {
     "genre": "roguelike deckbuilder",
@@ -53,20 +53,56 @@
     {
       "type": "background",
       "name": "chamber",
-      "source": "placeholder",
-      "origin": "primitive"
+      "source": "art/bg_chamber.svg",
+      "origin": "svg"
     },
     {
       "type": "sprite",
-      "name": "card_frame",
-      "source": "placeholder",
-      "origin": "primitive"
+      "name": "card_frame_fire",
+      "source": "art/card_fire.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "card_frame_ice",
+      "source": "art/card_ice.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "card_frame_lightning",
+      "source": "art/card_lightning.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "card_frame_neutral",
+      "source": "art/card_neutral.svg",
+      "origin": "svg"
     },
     {
       "type": "sprite",
       "name": "enemy_imp",
-      "source": "placeholder",
-      "origin": "primitive"
+      "source": "art/enemy_imp.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_frost_wraith",
+      "source": "art/enemy_frost_wraith.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_golem",
+      "source": "art/enemy_golem.svg",
+      "origin": "svg"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_archmage",
+      "source": "art/enemy_archmage.svg",
+      "origin": "svg"
     }
   ],
   "validation": {
@@ -79,5 +115,38 @@
     "compliance": null,
     "store": null,
     "maintenance": null
+  },
+  "asset_pass": {
+    "method": "svg",
+    "visual_system": {
+      "world_bible": "One candle-lit arcane duelling chamber of indigo-violet stone ringed with glowing runes. Every actor is a SUMMONED entity of that one world — a violet-stone silhouette (gradient body #46306a->#281a44, lighter rune-stroke outline) with glowing element-tinted rune-eyes and a soft element-tinted aura. The four enemies are one family read by silhouette+element: imp (small, horned, bat-winged, fire/amber), frost_wraith (tall floating hooded shroud, ice/cyan), golem (broad blocky construct with a glowing core, stone/violet), archmage boss (robed sorcerer, pointed hat, rune-orb staff, halo of runes, lightning/violet). Spell cards are glyph-bordered stone-and-rune scrolls cut from the same material, element-tinted to match the spell.",
+      "palette": [
+        "#1a1030 indigo (bg deep)",
+        "#2d1b4e violet (bg)",
+        "#46306a/#281a44 violet-stone (bodies/cards)",
+        "#e8c25a gold (rune flourishes)",
+        "#ff9a2e fire amber",
+        "#4ce1ff ice cyan",
+        "#c87bff lightning violet",
+        "#b9b3c8 neutral grey-violet",
+        "#f3eaff highlight"
+      ],
+      "stroke": "~2-3px lighter-tint outline, round join/cap, plus an outer low-alpha element-tinted glow halo on every framed/aura element",
+      "form": "rounded-rect glyph-bordered card frames (corner radius) + organic creature silhouettes, each with a signature: imp horns+wings+barbed tail, wraith tattered hooded shroud, golem blocky core-rune, archmage hat+staff+rune halo; per-element card sigil (flame / 6-fold snowflake / bolt-in-ring / 8-point star rune)",
+      "shading": "flat fill + single vertical body gradient + outer glow halo (element-tinted) — one model everywhere",
+      "scale": "cards authored at 2x footprint (240x320 viewBox -> drawn 120x160) for high-DPI headroom; enemies 240x240 viewBox -> drawn 220px centered at the enemy anchor; background 1280x720 1:1 full-frame"
+    },
+    "reskinned": [
+      "background:chamber",
+      "card_frame:fire/ice/lightning/neutral (4 element frames, drawn behind the dynamic cost-gem + name/type/effect text)",
+      "enemy:imp/frost_wraith/golem/archmage (4 distinct silhouettes, flash=overbright modulate pass, enrage=scale-pop, dissolve=alpha)"
+    ],
+    "left_primitive": [
+      "all juice/motion (screen shake, card-cast arc ghost, number pop-ups, death dissolve+particles, HP/mana tweens, status pulses, intent telegraph) — motion not art",
+      "HUD chrome (HP/mana/block panel, pile counts, End Turn button, reward/win/lose overlays) — functional UI text/rects",
+      "cost gem + enemy HP bar/intent/status-icon badges — dynamic data drawn over the frame/silhouette"
+    ],
+    "art_path": "games/deckbuilder-0001/art/",
+    "notes": "draw_texture*-in-place strategy (preferred for the builder default single-_draw immediate-mode renderer): textures load once in _ready, replace the primitive draw calls in _draw_background/_draw_enemy/_draw_card_face, preserving z-order + shake + all juice for free. Each draw helper guards on a null texture and falls back to the original primitive so a missing import never hard-fails. SVG is the correct method here — concept.art_direction is explicitly arcane-SIGIL VECTOR (geometric frames/runes/silhouettes), resolution-independent across Android density buckets. Hit-flash on a textured silhouette done via an overbright (modulate>1) additive second draw_texture_rect pass — no shader needed. All 4 enemies + 4 card frames + bg verified in-frame on the RTX 5080 real renderer; selftest still SELFTEST OK (rules untouched)."
   }
 }

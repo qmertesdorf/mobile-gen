@@ -74,7 +74,8 @@ func _begin_current_node() -> void:
 func _refresh() -> void:
 	if _view == null:
 		return
-	_view.refresh(_combat, _state as int, _rewards)
+	var relics: Array = _run.relics if _run != null else []
+	_view.refresh(_combat, _state as int, _rewards, relics)
 
 
 # ─── Input routing ────────────────────────────────────────────────────────────

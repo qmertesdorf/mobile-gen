@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#c87bff" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#c87bff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3c2a64"/>
+      <stop offset="1" stop-color="#211440"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.4" stop-color="#dcabff"/>
+      <stop offset="1" stop-color="#8b4dff"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="120" cy="120" rx="108" ry="110" fill="url(#aura)"/>
+  <!-- Halo of runes above the crown -->
+  <g stroke="#dcabff" stroke-width="2" fill="none" opacity="0.7">
+    <ellipse cx="120" cy="30" rx="46" ry="13"/>
+  </g>
+  <g fill="#c87bff" opacity="0.9">
+    <circle cx="74" cy="30" r="2.6"/>
+    <circle cx="120" cy="22" r="2.6"/>
+    <circle cx="166" cy="30" r="2.6"/>
+    <circle cx="96" cy="24" r="2"/>
+    <circle cx="144" cy="24" r="2"/>
+  </g>
+  <!-- Staff -->
+  <line x1="176" y1="60" x2="176" y2="210" stroke="#6a4a30" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="176" cy="54" r="14" fill="url(#orb)"/>
+  <circle cx="176" cy="54" r="14" fill="none" stroke="#f0d8ff" stroke-width="1.5"/>
+  <!-- Flowing robe (regal, wide hem) -->
+  <path d="M120 64
+           C90 66 76 92 76 124
+           C76 162 66 192 56 214
+           L96 206 L120 214 L144 206 L184 214
+           C174 192 164 162 164 124
+           C164 92 150 66 120 64 Z"
+        fill="url(#robe)" stroke="#a07bd6" stroke-width="3"/>
+  <!-- Robe trim -->
+  <path d="M120 64 L120 200" stroke="#c87bff" stroke-width="2" opacity="0.5"/>
+  <!-- Sleeve / arm to the staff -->
+  <path d="M150 110 Q176 116 176 96 Q166 108 150 100 Z" fill="#2c1d4e" stroke="#a07bd6" stroke-width="1.5"/>
+  <!-- Pointed wizard hat -->
+  <path d="M120 22 L98 78 L142 78 Z" fill="#2c1d4e" stroke="#a07bd6" stroke-width="2.5"/>
+  <path d="M96 78 L144 78 L140 90 L100 90 Z" fill="#33235a" stroke="#a07bd6" stroke-width="2"/>
+  <circle cx="120" cy="48" r="3.5" fill="#dcabff"/>
+  <!-- Shadowed face -->
+  <ellipse cx="120" cy="100" rx="17" ry="15" fill="#0e0822"/>
+  <!-- Glowing rune eyes -->
+  <ellipse cx="113" cy="99" rx="5" ry="6" fill="#f0d8ff"/>
+  <ellipse cx="127" cy="99" rx="5" ry="6" fill="#f0d8ff"/>
+  <ellipse cx="113" cy="99" rx="2.2" ry="3" fill="#c87bff"/>
+  <ellipse cx="127" cy="99" rx="2.2" ry="3" fill="#c87bff"/>
+  <!-- Long beard -->
+  <path d="M108 112 Q120 150 132 112 Q126 132 120 136 Q114 132 108 112 Z" fill="#d8c4ff" opacity="0.55"/>
+</svg>

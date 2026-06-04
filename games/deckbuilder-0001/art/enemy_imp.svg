@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240">
+  <defs>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff7a2e" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#ff7a2e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#46306a"/>
+      <stop offset="1" stop-color="#281a44"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="120" cy="128" rx="100" ry="100" fill="url(#aura)"/>
+  <!-- Barbed tail -->
+  <path d="M150 168 Q188 176 184 142 Q182 124 168 130" fill="none" stroke="#33234f" stroke-width="9" stroke-linecap="round"/>
+  <path d="M184 142 l12 -10 l-2 16 z" fill="#ff9a2e"/>
+  <!-- Bat wings -->
+  <path d="M92 96 Q40 70 30 110 Q58 104 64 124 Q44 120 46 142 Q78 120 96 132 Z" fill="#34244f"/>
+  <path d="M148 96 Q200 70 210 110 Q182 104 176 124 Q196 120 194 142 Q162 120 144 132 Z" fill="#34244f"/>
+  <!-- Body (lean, crouched) -->
+  <path d="M120 94
+           C100 96 88 112 90 140
+           C91 158 102 172 120 176
+           C138 172 149 158 150 140
+           C152 112 140 96 120 94 Z" fill="url(#stone)" stroke="#6a4a9c" stroke-width="2.5"/>
+  <!-- Little legs -->
+  <path d="M106 172 l-6 18 l12 0 z" fill="#2a1c44"/>
+  <path d="M134 172 l6 18 l-12 0 z" fill="#2a1c44"/>
+  <!-- Head -->
+  <ellipse cx="120" cy="86" rx="26" ry="23" fill="url(#stone)" stroke="#6a4a9c" stroke-width="2.5"/>
+  <!-- Pointed ears -->
+  <path d="M96 80 l-16 -6 l12 16 z" fill="#3a2858" stroke="#6a4a9c" stroke-width="1.5"/>
+  <path d="M144 80 l16 -6 l-12 16 z" fill="#3a2858" stroke="#6a4a9c" stroke-width="1.5"/>
+  <!-- Curved horns -->
+  <path d="M104 68 Q92 44 102 36" fill="none" stroke="#d9b27a" stroke-width="5" stroke-linecap="round"/>
+  <path d="M136 68 Q148 44 138 36" fill="none" stroke="#d9b27a" stroke-width="5" stroke-linecap="round"/>
+  <!-- Glowing rune eyes -->
+  <ellipse cx="111" cy="86" rx="6" ry="7" fill="#ffd27a"/>
+  <ellipse cx="129" cy="86" rx="6" ry="7" fill="#ffd27a"/>
+  <ellipse cx="111" cy="86" rx="2.6" ry="3.4" fill="#ff5a2e"/>
+  <ellipse cx="129" cy="86" rx="2.6" ry="3.4" fill="#ff5a2e"/>
+  <!-- Fanged grin -->
+  <path d="M110 102 q10 8 20 0" fill="none" stroke="#ffb259" stroke-width="2" stroke-linecap="round"/>
+</svg>
