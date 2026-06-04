@@ -1,14 +1,14 @@
-# Screen-Audit Skill Split — Implementation Plan
+# visual-audit Skill Split — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Extract the composited-running-game audit out of `asset/SKILL.md` into a new standalone `screen-audit` skill (a short spine + one `references/<lens>.md` per lens), leaving `asset` as a focused production skill.
+**Goal:** Extract the composited-running-game audit out of `asset/SKILL.md` into a new standalone `visual-audit` skill (a short spine + one `references/<lens>.md` per lens), leaving `asset` as a focused production skill.
 
-**Architecture:** New skill dir `.claude/skills/screen-audit/` with `SKILL.md` (process spine: render every game state, fan out one fresh auditor subagent per lens, dedupe + attribute findings, drive the fix→re-render→re-audit loop, report — no manifest write) and `references/` holding 5 lens checklists (1 setup: inventory/completeness; 4 parallel: fidelity/cohesion, composition/collision, legibility, colour-accessibility). The per-PNG "judge each generation against intent" audit STAYS in `asset` (it drives regeneration). Cross-references in `asset`, `README.md`, `CLAUDE.md` updated; `validator` verified.
+**Architecture:** New skill dir `.claude/skills/visual-audit/` with `SKILL.md` (process spine: render every game state, fan out one fresh auditor subagent per lens, dedupe + attribute findings, drive the fix→re-render→re-audit loop, report — no manifest write) and `references/` holding 5 lens checklists (1 setup: inventory/completeness; 4 parallel: fidelity/cohesion, composition/collision, legibility, colour-accessibility). The per-PNG "judge each generation against intent" audit STAYS in `asset` (it drives regeneration). Cross-references in `asset`, `README.md`, `CLAUDE.md` updated; `validator` verified.
 
 **Tech Stack:** Markdown skill files (Anthropic Agent-Skills format: a skill is a dir with `SKILL.md` + optional `references/`). No code, no schema change, no manifest block. Validation is `writing-skills` RED/GREEN: dispatch fresh auditor subagents at known-buggy frames in `docs/superpowers/probe-data/deckbuilder-raster-v1/` and confirm each lens catches its bug class.
 
-**Naming note:** The skill name is `screen-audit` throughout. If you prefer `composited-audit` / `visual-audit` / `art-audit`, do a single global rename (dir name + every `screen-audit` mention) before Task 9 validation.
+**Naming note:** The skill name is `visual-audit` throughout (locked).
 
 **Source of truth for moved prose:** the CURRENT `.claude/skills/asset/SKILL.md` (256 lines). The composited-audit block is **lines 146–186**. The per-PNG audit (lines 103–113) STAYS. Exact line anchors are given per task. When moving a passage, move it **verbatim**, then rewrite only the dangling cross-references called out in that task so each reference file is self-contained.
 
@@ -16,12 +16,12 @@
 
 ## File Structure
 
-- **Create** `.claude/skills/screen-audit/SKILL.md` — process spine (frontmatter + workflow + fan-out + loop + mipmap fix + report). New content (Task 1).
-- **Create** `.claude/skills/screen-audit/references/inventory-completeness.md` — lens 1 setup (Task 2; source: asset 149–150).
-- **Create** `.claude/skills/screen-audit/references/fidelity-cohesion.md` — lens 2 (Task 3; source: asset 151–166).
-- **Create** `.claude/skills/screen-audit/references/composition-collision.md` — lens 3 (Task 4; source: asset 167–170 + 172–175).
-- **Create** `.claude/skills/screen-audit/references/legibility.md` — lens 4 (Task 5; source: asset 176).
-- **Create** `.claude/skills/screen-audit/references/colour-accessibility.md` — lens 5 (Task 6; source: asset 177–181).
+- **Create** `.claude/skills/visual-audit/SKILL.md` — process spine (frontmatter + workflow + fan-out + loop + mipmap fix + report). New content (Task 1).
+- **Create** `.claude/skills/visual-audit/references/inventory-completeness.md` — lens 1 setup (Task 2; source: asset 149–150).
+- **Create** `.claude/skills/visual-audit/references/fidelity-cohesion.md` — lens 2 (Task 3; source: asset 151–166).
+- **Create** `.claude/skills/visual-audit/references/composition-collision.md` — lens 3 (Task 4; source: asset 167–170 + 172–175).
+- **Create** `.claude/skills/visual-audit/references/legibility.md` — lens 4 (Task 5; source: asset 176).
+- **Create** `.claude/skills/visual-audit/references/colour-accessibility.md` — lens 5 (Task 6; source: asset 177–181).
 - **Modify** `.claude/skills/asset/SKILL.md` — delete the composited-audit block (146–186), fix description + handoff + loop diagram + cross-refs (Task 7).
 - **Modify** `README.md`, `CLAUDE.md`; **verify** `.claude/skills/validator/SKILL.md` (Task 8).
 - **Validate** RED/GREEN + asset coherence (Task 9).
@@ -30,25 +30,25 @@ Reference files are plain markdown (NOT `SKILL.md`), so they are NOT auto-discov
 
 ---
 
-### Task 1: Scaffold `screen-audit` and write the spine `SKILL.md`
+### Task 1: Scaffold `visual-audit` and write the spine `SKILL.md`
 
 **Files:**
-- Create: `.claude/skills/screen-audit/SKILL.md`
+- Create: `.claude/skills/visual-audit/SKILL.md`
 
 - [ ] **Step 1: Create the skill dir and SKILL.md with this exact content**
 
 ```markdown
 ---
-name: screen-audit
+name: visual-audit
 description: Use when judging the composited, assembled screen of a running Godot game — "does it look designed and read clearly?" — typically after the asset re-skin (before validator's styled gate) or standalone on any running game. Renders every game state, fans out one fresh auditor subagent per lens (inventory/completeness, fidelity/cohesion, composition/collision, legibility, colour-accessibility), dedupes + attributes findings, and drives the fix → re-render → re-audit loop. Records NOTHING to the manifest — outputs are code fixes (git) + a findings report.
 ---
 
-# screen-audit
+# visual-audit
 
 Grade the **assembled, running screen** of a Godot game — not the raw asset files. "The art is good" ≠ "the screen is good": a re-skin that nails every PNG still ships unfinished if a primitive HUD, an unreadable value, an icon-over-the-name collision, or a colour-blind-hostile state survives. This skill is the composited audit, extracted from `asset` so it is reusable on ANY running game and so independent fresh eyes — not the person who made the fix — render the verdict.
 
 ```
-… → [playable] → asset (produce + asset_pass) → screen-audit (this skill) → validator(re-run) → [styled]
+… → [playable] → asset (produce + asset_pass) → visual-audit (this skill) → validator(re-run) → [styled]
 ```
 
 Also invocable standalone: point it at any running game to grade its screen.
@@ -95,14 +95,14 @@ An asset authored ornate at high res and drawn into a small UI slot (a 768×1024
 
 - [ ] **Step 2: Verify the file exists and frontmatter is well-formed**
 
-Run: `node -e "const fs=require('fs');const t=fs.readFileSync('.claude/skills/screen-audit/SKILL.md','utf8');const m=t.match(/^---\n([\s\S]*?)\n---/);if(!m)throw new Error('no frontmatter');if(!/name: screen-audit/.test(m[1]))throw new Error('bad name');if(!/description:/.test(m[1]))throw new Error('no description');console.log('SPINE OK')"`
+Run: `node -e "const fs=require('fs');const t=fs.readFileSync('.claude/skills/visual-audit/SKILL.md','utf8');const m=t.match(/^---\n([\s\S]*?)\n---/);if(!m)throw new Error('no frontmatter');if(!/name: visual-audit/.test(m[1]))throw new Error('bad name');if(!/description:/.test(m[1]))throw new Error('no description');console.log('SPINE OK')"`
 Expected: prints `SPINE OK`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/SKILL.md
-git commit -m "feat(screen-audit): scaffold standalone composited-audit skill spine"
+git add .claude/skills/visual-audit/SKILL.md
+git commit -m "feat(visual-audit): scaffold standalone composited-audit skill spine"
 ```
 
 ---
@@ -110,7 +110,7 @@ git commit -m "feat(screen-audit): scaffold standalone composited-audit skill sp
 ### Task 2: Reference — inventory & completeness (lens 1, setup)
 
 **Files:**
-- Create: `.claude/skills/screen-audit/references/inventory-completeness.md`
+- Create: `.claude/skills/visual-audit/references/inventory-completeness.md`
 
 - [ ] **Step 1: Create the file with this header, then the moved passage**
 
@@ -118,21 +118,21 @@ Header (new):
 ```markdown
 # Lens: Inventory & completeness (setup pass)
 
-Used by the `screen-audit` skill. Runs FIRST and feeds the other lenses. Walk the renderer top-to-bottom, classify every drawn element, and produce the missing-asset list + element/state map.
+Used by the `visual-audit` skill. Runs FIRST and feeds the other lenses. Walk the renderer top-to-bottom, classify every drawn element, and produce the missing-asset list + element/state map.
 ```
 
 Then append, **verbatim from `asset/SKILL.md` line 149–150** (the paragraph beginning `**1. Inventory EVERY drawn element**`). Rewrite the lead `**1. Inventory EVERY drawn element**` → `**Inventory EVERY drawn element**` (drop the move number). No other cross-refs to fix in this passage.
 
 - [ ] **Step 2: Verify self-contained**
 
-Run: `grep -nE "Move [0-9]|see below|this auditor" .claude/skills/screen-audit/references/inventory-completeness.md || echo "CLEAN"`
+Run: `grep -nE "Move [0-9]|see below|this auditor" .claude/skills/visual-audit/references/inventory-completeness.md || echo "CLEAN"`
 Expected: `CLEAN` (no dangling move/see-below refs). If any appear, rewrite them to name the sibling lens or `the asset skill`.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/references/inventory-completeness.md
-git commit -m "feat(screen-audit): inventory & completeness lens"
+git add .claude/skills/visual-audit/references/inventory-completeness.md
+git commit -m "feat(visual-audit): inventory & completeness lens"
 ```
 
 ---
@@ -140,7 +140,7 @@ git commit -m "feat(screen-audit): inventory & completeness lens"
 ### Task 3: Reference — fidelity & cohesion (lens 2)
 
 **Files:**
-- Create: `.claude/skills/screen-audit/references/fidelity-cohesion.md`
+- Create: `.claude/skills/visual-audit/references/fidelity-cohesion.md`
 
 - [ ] **Step 1: Create the file with this header, then the moved passage**
 
@@ -148,21 +148,21 @@ Header (new):
 ```markdown
 # Lens: Fidelity & cohesion
 
-Used by the `screen-audit` skill (parallel). Does every drawn element hold the painted-art bar and belong to one hand? Judged at TRUE on-screen size, against the painted art — not against the other code tokens.
+Used by the `visual-audit` skill (parallel). Does every drawn element hold the painted-art bar and belong to one hand? Judged at TRUE on-screen size, against the painted art — not against the other code tokens.
 ```
 
 Then append, **verbatim from `asset/SKILL.md` lines 151–166** (Move 2: the paragraph beginning `**2. Hold every code-drawn element to the hero-art bar…**` through the `**Code-token red flags**` block and the `**Token framing & crop integrity…**` paragraph — i.e. everything up to but NOT including line 167 `**3. Scan for visual bugs**`). Rewrite the lead `**2. Hold every code-drawn element…**` → `**Hold every code-drawn element…**` (drop the move number). This passage also covers composited-level "theme/world read" — leave as-is.
 
 - [ ] **Step 2: Verify self-contained**
 
-Run: `grep -nE "Move [0-9]|asset-by-asset" .claude/skills/screen-audit/references/fidelity-cohesion.md || echo "CLEAN"`
+Run: `grep -nE "Move [0-9]|asset-by-asset" .claude/skills/visual-audit/references/fidelity-cohesion.md || echo "CLEAN"`
 Expected: `CLEAN`. If a `Move N` ref remains, rewrite to the sibling lens name.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/references/fidelity-cohesion.md
-git commit -m "feat(screen-audit): fidelity & cohesion lens"
+git add .claude/skills/visual-audit/references/fidelity-cohesion.md
+git commit -m "feat(visual-audit): fidelity & cohesion lens"
 ```
 
 ---
@@ -170,7 +170,7 @@ git commit -m "feat(screen-audit): fidelity & cohesion lens"
 ### Task 4: Reference — composition & collision (lens 3)
 
 **Files:**
-- Create: `.claude/skills/screen-audit/references/composition-collision.md`
+- Create: `.claude/skills/visual-audit/references/composition-collision.md`
 
 - [ ] **Step 1: Create the file with this header, then the moved passages in this order**
 
@@ -178,11 +178,11 @@ Header (new):
 ```markdown
 # Lens: Composition & collision
 
-Used by the `screen-audit` skill (parallel). How elements sit together in space, and spatial render bugs. ENUMERATE element pairs and inspect each boundary in a MAGNIFIED crop — never judge from the downscaled frame.
+Used by the `visual-audit` skill (parallel). How elements sit together in space, and spatial render bugs. ENUMERATE element pairs and inspect each boundary in a MAGNIFIED crop — never judge from the downscaled frame.
 ```
 
 Then append, in this order:
-1. **Verbatim from `asset/SKILL.md` lines 167–170** — the `**3. Scan for visual bugs:**` paragraph. Rewrite lead `**3. Scan for visual bugs:**` → `**Scan for visual bugs:**`. It contains `a mis-cut token (see below)` → rewrite to `a mis-cut token (see the fidelity-cohesion lens)` and `grain from missing mipmaps (below)` → `grain from missing mipmaps (see the screen-audit spine's "Mipmaps" section)`.
+1. **Verbatim from `asset/SKILL.md` lines 167–170** — the `**3. Scan for visual bugs:**` paragraph. Rewrite lead `**3. Scan for visual bugs:**` → `**Scan for visual bugs:**`. It contains `a mis-cut token (see below)` → rewrite to `a mis-cut token (see the fidelity-cohesion lens)` and `grain from missing mipmaps (below)` → `grain from missing mipmaps (see the visual-audit spine's "Mipmaps" section)`.
 2. **Verbatim from `asset/SKILL.md` line 172** — the `**Overlap / collision pass…**` bullet.
 3. **Verbatim from `asset/SKILL.md` line 173** — the `**A painted icon's footprint is its ART…**` sub-bullet.
 4. **Verbatim from `asset/SKILL.md` line 174** — the `**There is NO "minor" tier when a non-text element contacts TEXT.**` sub-bullet.
@@ -190,14 +190,14 @@ Then append, in this order:
 
 - [ ] **Step 2: Verify self-contained**
 
-Run: `grep -nE "see below|Moves 1.3|asset-by-asset" .claude/skills/screen-audit/references/composition-collision.md || echo "CLEAN"`
+Run: `grep -nE "see below|Moves 1.3|asset-by-asset" .claude/skills/visual-audit/references/composition-collision.md || echo "CLEAN"`
 Expected: `CLEAN` (the two `see below` refs from the visual-bugs paragraph must already be rewritten in Step 1).
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/references/composition-collision.md
-git commit -m "feat(screen-audit): composition & collision lens"
+git add .claude/skills/visual-audit/references/composition-collision.md
+git commit -m "feat(visual-audit): composition & collision lens"
 ```
 
 ---
@@ -205,7 +205,7 @@ git commit -m "feat(screen-audit): composition & collision lens"
 ### Task 5: Reference — legibility (lens 4)
 
 **Files:**
-- Create: `.claude/skills/screen-audit/references/legibility.md`
+- Create: `.claude/skills/visual-audit/references/legibility.md`
 
 - [ ] **Step 1: Create the file with this header, then the moved passage**
 
@@ -213,7 +213,7 @@ Header (new):
 ```markdown
 # Lens: Legibility
 
-Used by the `screen-audit` skill (parallel). Can a player READ every text block and value at true size? The solid-backing primitive applies to ALL runtime text over non-uniform art, not just cards.
+Used by the `visual-audit` skill (parallel). Can a player READ every text block and value at true size? The solid-backing primitive applies to ALL runtime text over non-uniform art, not just cards.
 ```
 
 Then append, **verbatim from `asset/SKILL.md` line 176** — the `**Legibility-over-background pass — EVERY text block needs a guaranteed solid backing…**` bullet. It references `The full-bleed-card rule` — append this connective sentence so the reference is self-contained:
@@ -227,14 +227,14 @@ Then append, **verbatim from `asset/SKILL.md` line 176** — the `**Legibility-o
 
 - [ ] **Step 2: Verify self-contained**
 
-Run: `grep -nE "see below" .claude/skills/screen-audit/references/legibility.md || echo "CLEAN"`
+Run: `grep -nE "see below" .claude/skills/visual-audit/references/legibility.md || echo "CLEAN"`
 Expected: `CLEAN`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/references/legibility.md
-git commit -m "feat(screen-audit): legibility lens"
+git add .claude/skills/visual-audit/references/legibility.md
+git commit -m "feat(visual-audit): legibility lens"
 ```
 
 ---
@@ -242,7 +242,7 @@ git commit -m "feat(screen-audit): legibility lens"
 ### Task 6: Reference — colour-accessibility (lens 5)
 
 **Files:**
-- Create: `.claude/skills/screen-audit/references/colour-accessibility.md`
+- Create: `.claude/skills/visual-audit/references/colour-accessibility.md`
 
 - [ ] **Step 1: Create the file with this header, then the moved passages**
 
@@ -250,21 +250,21 @@ Header (new):
 ```markdown
 # Lens: Colour-accessibility
 
-Used by the `screen-audit` skill (parallel). Contrast + colour-blind safety, judged on the composite. Sibling of the legibility lens; structured separately so it can graduate to its own standalone skill later.
+Used by the `visual-audit` skill (parallel). Contrast + colour-blind safety, judged on the composite. Sibling of the legibility lens; structured separately so it can graduate to its own standalone skill later.
 ```
 
 Then append, **verbatim from `asset/SKILL.md` lines 177–181** — the `**Colour-accessibility sweep…**` bullet and its four sub-bullets (Contrast ratio / Never encode meaning by hue alone / Differ in VALUE / Simulate it). No cross-refs to fix.
 
 - [ ] **Step 2: Verify self-contained**
 
-Run: `grep -nE "Move [0-9]|see below" .claude/skills/screen-audit/references/colour-accessibility.md || echo "CLEAN"`
+Run: `grep -nE "Move [0-9]|see below" .claude/skills/visual-audit/references/colour-accessibility.md || echo "CLEAN"`
 Expected: `CLEAN`
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add .claude/skills/screen-audit/references/colour-accessibility.md
-git commit -m "feat(screen-audit): colour-accessibility lens"
+git add .claude/skills/visual-audit/references/colour-accessibility.md
+git commit -m "feat(visual-audit): colour-accessibility lens"
 ```
 
 ---
@@ -289,28 +289,28 @@ $out = $lines[0..144] + $lines[187..($lines.Count-1)]   # drop 145..186 (0-based
 Set-Content $p $out
 ```
 
-- [ ] **Step 2: Fix the description (line 3) — drop "audits the composited running game", route to screen-audit**
+- [ ] **Step 2: Fix the description (line 3) — drop "audits the composited running game", route to visual-audit**
 
 Replace `audits the composited running game, records asset_pass, and hands off to validator for "styled".`
-with `records asset_pass, and hands off to the screen-audit skill (which judges the composited running game) ahead of validator's "styled" gate.`
+with `records asset_pass, and hands off to the visual-audit skill (which judges the composited running game) ahead of validator's "styled" gate.`
 
 - [ ] **Step 3: Fix the loop diagram (line ~12)**
 
 Replace the line `concept → builder → validator → [playable] → asset → validator(re-run) → [styled]`
-with `concept → builder → validator → [playable] → asset → screen-audit → validator(re-run) → [styled]`
+with `concept → builder → validator → [playable] → asset → visual-audit → validator(re-run) → [styled]`
 
 - [ ] **Step 4: Fix the two remaining cross-references into the moved section**
 
 Find and rewrite (these are in passages that STAY in asset):
-- The per-PNG audit cross-ref (was line ~110): `(see "Audit the composited, running game")` → `(see the screen-audit skill)`.
-- The mixed-method cross-ref (was line ~205): `the composited audit` → `the screen-audit skill (fidelity-cohesion lens)`.
+- The per-PNG audit cross-ref (was line ~110): `(see "Audit the composited, running game")` → `(see the visual-audit skill)`.
+- The mixed-method cross-ref (was line ~205): `the composited audit` → `the visual-audit skill (fidelity-cohesion lens)`.
 
 Run to locate: `grep -nE "Audit the composited, running game|the composited audit" .claude/skills/asset/SKILL.md`
 Then edit each hit per above. Expected after: that grep returns nothing.
 
 - [ ] **Step 5: Fix the handoff section (was "## Hand off to the validator", ~line 251)**
 
-Change the heading to `## Hand off to screen-audit` and rewrite its body so asset hands the rewired game to `screen-audit` (the composited audit + fix loop), which in turn hands to `validator` for the headless/selftest re-run + human A/B → `styled`. Keep the `selftest.gd` must still print `SELFTEST OK` requirement. Keep one sentence noting the `--import` pass must precede any render.
+Change the heading to `## Hand off to visual-audit` and rewrite its body so asset hands the rewired game to `visual-audit` (the composited audit + fix loop), which in turn hands to `validator` for the headless/selftest re-run + human A/B → `styled`. Keep the `selftest.gd` must still print `SELFTEST OK` requirement. Keep one sentence noting the `--import` pass must precede any render.
 
 - [ ] **Step 6: Verify asset no longer contains audit-move prose and still has the per-PNG audit**
 
@@ -324,7 +324,7 @@ Expected: still present (the per-PNG audit stays).
 
 ```bash
 git add .claude/skills/asset/SKILL.md
-git commit -m "refactor(asset): hand the composited audit to the new screen-audit skill"
+git commit -m "refactor(asset): hand the composited audit to the new visual-audit skill"
 ```
 
 ---
@@ -339,22 +339,22 @@ git commit -m "refactor(asset): hand the composited audit to the new screen-audi
 - [ ] **Step 1: README skill list (line 11)**
 
 Replace `the \`concept\`, \`builder\`, \`validator\`, \`asset\` (re-skin/art), and \`audio\` (SFX+music) skills.`
-with `the \`concept\`, \`builder\`, \`validator\`, \`asset\` (re-skin/art), \`screen-audit\` (composited-screen audit), and \`audio\` (SFX+music) skills.`
+with `the \`concept\`, \`builder\`, \`validator\`, \`asset\` (re-skin/art), \`visual-audit\` (composited-screen audit), and \`audio\` (SFX+music) skills.`
 
 - [ ] **Step 2: CLAUDE.md skill-loop line (line 17)**
 
-In the sentence `The \`asset\`/\`audio\` skills own the art/audio judgment;` change to `The \`asset\`/\`audio\` skills own art/audio production and \`screen-audit\` owns judging the composited screen;`
+In the sentence `The \`asset\`/\`audio\` skills own the art/audio judgment;` change to `The \`asset\`/\`audio\` skills own art/audio production and \`visual-audit\` owns judging the composited screen;`
 
 - [ ] **Step 3: Verify validator has no stale ownership of the composited audit**
 
 Run: `grep -nE "composited|asset.*audit|owns the.*audit" .claude/skills/validator/SKILL.md || echo "VALIDATOR CLEAN"`
-Expected: `VALIDATOR CLEAN`. If a hit appears, update it to reference `screen-audit` and note the change in the commit.
+Expected: `VALIDATOR CLEAN`. If a hit appears, update it to reference `visual-audit` and note the change in the commit.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add README.md CLAUDE.md .claude/skills/validator/SKILL.md
-git commit -m "docs: insert screen-audit into the skill loop (README, CLAUDE, validator)"
+git commit -m "docs: insert visual-audit into the skill loop (README, CLAUDE, validator)"
 ```
 
 ---
@@ -364,7 +364,7 @@ git commit -m "docs: insert screen-audit into the skill loop (README, CLAUDE, va
 This is the `writing-skills` discipline: prove each lens still catches its bug class after the move, using fresh subagents and existing frames. There are no automated unit tests for skills; the "test" is a subagent dispatch.
 
 **Files:**
-- Read-only: `.claude/skills/screen-audit/**`, `.claude/skills/asset/SKILL.md`
+- Read-only: `.claude/skills/visual-audit/**`, `.claude/skills/asset/SKILL.md`
 - RED frames: `docs/superpowers/probe-data/deckbuilder-raster-v1/*.png`
 
 - [ ] **Step 1: Pick a RED frame per lens (open them; confirm the bug class is visibly present)**
@@ -387,13 +387,13 @@ Expected: each lens returns few/no findings of its class (a stray low-severity n
 
 - [ ] **Step 4: Asset coherence check (fresh read)**
 
-Read `.claude/skills/asset/SKILL.md` end-to-end. Confirm: (a) no dangling references to the moved section (grep from Task 7 Step 6 returns MOVED-OUT OK and the cross-ref grep returns nothing), (b) the per-PNG audit section is intact, (c) the handoff now points to `screen-audit`, (d) the loop diagram includes `screen-audit`. Fix any issue inline and re-commit.
+Read `.claude/skills/asset/SKILL.md` end-to-end. Confirm: (a) no dangling references to the moved section (grep from Task 7 Step 6 returns MOVED-OUT OK and the cross-ref grep returns nothing), (b) the per-PNG audit section is intact, (c) the handoff now points to `visual-audit`, (d) the loop diagram includes `visual-audit`. Fix any issue inline and re-commit.
 
 - [ ] **Step 5: Commit any validation fixes**
 
 ```bash
 git add .claude/skills/
-git commit -m "test(screen-audit): RED/GREEN validate lenses catch their bug classes after the split"
+git commit -m "test(visual-audit): RED/GREEN validate lenses catch their bug classes after the split"
 ```
 
 (If no fixes were needed, skip the commit and note "validation passed, no changes" in the run report.)
@@ -404,4 +404,4 @@ git commit -m "test(screen-audit): RED/GREEN validate lenses catch their bug cla
 
 - **Spec coverage:** boundary (Tasks 2–7) ✓; positioning between asset & validator (Task 1 spine + Task 7 handoff + Task 8 loop) ✓; no manifest record (spine "What this skill does NOT touch" + no schema task) ✓; spine + references + parallel fan-out (Task 1) ✓; 5 lenses 1 setup + 4 parallel (Tasks 2–6) ✓; cross-ref updates (Tasks 7–8) ✓; accessibility graduation-ready (Task 6 header note) ✓; RED/GREEN with probe-data frames (Task 9) ✓; theme→cohesion / per-PNG stays (Tasks 3, 7) ✓.
 - **Placeholders:** none — every moved passage cites exact source lines; new prose is inline; the only latitude (Task 9 frame choice) is bounded with a fallback.
-- **Naming consistency:** `screen-audit` used uniformly; reference filenames match the spine's lens table and every Task's create path.
+- **Naming consistency:** `visual-audit` used uniformly; reference filenames match the spine's lens table and every Task's create path.

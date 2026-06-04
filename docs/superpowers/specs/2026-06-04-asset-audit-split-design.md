@@ -45,15 +45,14 @@ its own side; we do not try to factor it into a third shared file.
 
 ## The new skill
 
-**Working name:** `screen-audit` (judges the assembled screen — art + chrome + text + colour — of a
-running game). Alternatives to confirm at the spec-review gate: `composited-audit`, `visual-audit`,
-`art-audit`. Single-file-per-skill is the existing repo convention; this skill intentionally breaks it
+**Name (locked):** `visual-audit` (judges the assembled screen — art + chrome + text + colour — of a
+running game). Single-file-per-skill is the existing repo convention; this skill intentionally breaks it
 with a `references/` subdir (new pattern here) to hold the lenses.
 
 **Trigger / positioning in the loop.** Inserted as a visible phase between `asset` and `validator`:
 
 ```
-… → [playable] → asset (produce + per-PNG audit + asset_pass) → screen-audit (composited audit, fix→re-render loop) → validator (re-run + human A/B → [styled])
+… → [playable] → asset (produce + per-PNG audit + asset_pass) → visual-audit (composited audit, fix→re-render loop) → validator (re-run + human A/B → [styled])
 ```
 
 Also **independently invocable** on any running game (no `asset_pass` required) to grade its screen.
@@ -109,9 +108,9 @@ the subject-level theme check is the per-PNG audit that stays in `asset`.
 
 - `asset/SKILL.md`: remove the composited-audit sections; change the description + "Hand off"
   section from "audits the composited running game … hands off to validator" to "hands off to
-  `screen-audit`"; update the internal cross-refs (current lines ~110, ~205) that point at "Audit the
+  `visual-audit`"; update the internal cross-refs (current lines ~110, ~205) that point at "Audit the
   composited, running game" to point at the new skill.
-- `README.md` and `CLAUDE.md`: update the skill-loop prose to insert `screen-audit` between `asset`
+- `README.md` and `CLAUDE.md`: update the skill-loop prose to insert `visual-audit` between `asset`
   and the validator re-run.
 - `validator/SKILL.md`: check for and update any reference to asset owning the composited audit.
 
@@ -134,6 +133,6 @@ The audit rules are hard-won from real misses, so the split must not lose them. 
 - Do **not** graduate accessibility to its own skill yet (structure it so we *can* later).
 - No change to the per-PNG audit, generation pipeline, `comfy.mjs`, or game logic.
 
-## Open item for the spec-review gate
+## Open items
 
-- Final skill name (`screen-audit` vs `composited-audit` / `visual-audit` / `art-audit`).
+- None — skill name locked to `visual-audit`; spec + plan approved.
