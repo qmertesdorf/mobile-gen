@@ -29,12 +29,14 @@ const RUN_SEED: int = 42
 @onready var _view: Node2D = $CombatView
 @onready var _map_view: Node2D = $MapView
 @onready var _shop_view: Node2D = $ShopView
+@onready var _event_view: Node2D = $EventView
 
 var _run: RunController
 var _combat     # CombatState
 var _state: State = State.COMBAT
 var _rewards: Array = []
 var _active_shop: Dictionary = {}
+var _active_event: Dictionary = {}
 
 # Juice: block input while animations are running so fast taps don't desync
 var _animating: bool = false
@@ -62,6 +64,8 @@ func _show_map() -> void:
 	_view.visible = false
 	if _shop_view:
 		_shop_view.visible = false
+	if _event_view:
+		_event_view.visible = false
 	_map_view.visible = true
 	_map_view.refresh(_run.map, _run.current_node_id(), _run.available_next())
 
@@ -78,11 +82,19 @@ func _enter_node() -> void:
 			_map_view.visible = false
 			if _shop_view:
 				_shop_view.visible = false
+			if _event_view:
+				_event_view.visible = false
 			_view.visible = true
 			_combat = _run.start_node_combat()
 			_view.capture_enemy_max_hp(_combat.enemy.get("hp", 1))
 			_state = State.COMBAT
 			_refresh()
+		"event":
+			_view.visible = false; _map_view.visible = false
+			_event_view.visible = true
+			_active_event = _run.roll_event()
+			_state = State.EVENT
+			_event_view.refresh(_active_event)
 		"shop":
 			_view.visible = false; _map_view.visible = false
 			_shop_view.visible = true
@@ -144,6 +156,8 @@ func _input(event: InputEvent) -> void:
 			_handle_map_tap(pos)
 		State.SHOP:
 			_handle_shop_tap(pos)
+		State.EVENT:
+			_handle_event_tap(pos)
 		State.WIN, State.LOSE:
 			# Tap anywhere to restart
 			_start_run()
@@ -281,3 +295,12 @@ func _handle_shop_tap(pos: Vector2) -> void:
 	if _shop_view.get_removal_rect().has_point(pos):
 		_run.buy_removal(_active_shop, 0)
 		_shop_view.refresh(_active_shop, _run.gold, _run.deck); return
+
+
+func _handle_event_tap(pos: Vector2) -> void:
+	var choices: Array = _active_event.get("choices", [])
+	for i in choices.size():
+		if _event_view.get_choice_rect(i).has_point(pos):
+			_run.resolve_event_choice(_active_event, i)
+			_show_map()
+			return
