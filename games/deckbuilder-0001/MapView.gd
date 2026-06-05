@@ -27,6 +27,7 @@ const COL_PANEL     := Color(0.08, 0.06, 0.14, 0.88)
 
 # Edge line colour
 const COL_EDGE      := Color(0.62, 0.50, 0.90, 0.70)
+const COL_EDGE_DIM  := Color(0.52, 0.44, 0.78, 0.42)   # off-path edge — recedes
 const COL_EDGE_HOT  := Color(0.95, 0.85, 0.40, 0.85)   # edge toward an available node
 
 # Node marker geometry
@@ -106,17 +107,17 @@ func _draw() -> void:
 	if fcount <= 0:
 		return
 
-	# 1) Edges first — thin lines between connected node centers.
+	# 1) Edges first — gently bowed paths between connected nodes. The available path
+	#    (current → choosable) is bright gold; the rest of the graph recedes so the eye
+	#    lands on the real choice, not on a uniform cobweb.
 	for fl in range(fcount):
 		for nid in _map.nodes_on_floor(fl):
 			var from_c: Vector2 = _center_of(nid)
 			for to_id in _map.next_of(nid):
 				var to_c: Vector2 = _center_of(to_id)
 				var hot: bool = (nid == _cur_id) and (to_id in _available)
-				# Dark under-stroke + brighter top stroke reads as a designed path,
-				# not a hairline debug line, over the painted vista.
-				var col: Color = COL_EDGE_HOT if hot else COL_EDGE
-				var wdt: float = 5.0 if hot else 3.5
+				var col: Color = COL_EDGE_HOT if hot else COL_EDGE_DIM
+				var wdt: float = 5.0 if hot else 3.0
 				# Inset both ends to the marker radius so the path connects ring-to-ring
 				# and never runs under an icon's transparent interior or its label pill.
 				var dir: Vector2 = to_c - from_c
@@ -129,8 +130,9 @@ func _draw() -> void:
 					inset = maxf(0.0, dist * 0.5 - 6.0)
 				var a: Vector2 = from_c + dir * inset
 				var b: Vector2 = to_c - dir * inset
-				draw_line(a, b, Color(0.04, 0.03, 0.08, 0.55), wdt + 2.5)
-				draw_line(a, b, col, wdt)
+				var pts: PackedVector2Array = _curve_points(a, b)
+				draw_polyline(pts, Color(0.04, 0.03, 0.08, 0.5), wdt + 2.5)
+				draw_polyline(pts, col, wdt)
 
 	# 2) Node markers, coloured by type.
 	for fl in range(fcount):
@@ -170,6 +172,13 @@ func _draw_node(nid: int) -> void:
 	var is_current: bool = (nid == _cur_id)
 	var is_available: bool = (nid in _available)
 	var r: float = NODE_R_AVAIL if is_available else NODE_R
+
+	# Soft elliptical contact shadow grounds the marker into the scene so it reads as
+	# standing in the world, not floating on a wallpaper (subtler for locked nodes).
+	var sh_a: float = 0.34 if (is_current or is_available) else 0.20
+	draw_set_transform(center + Vector2(0.0, r * 0.82), 0.0, Vector2(1.0, 0.42))
+	draw_circle(Vector2.ZERO, r * 0.95, Color(0.0, 0.0, 0.0, sh_a))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	# Current node: pulsing ring/glow behind the marker.
 	if is_current:
@@ -211,18 +220,39 @@ func _draw_node_label(nid: int) -> void:
 	if node.is_empty():
 		return
 	var ntype: String = node.get("type", "")
+	var lit: bool = (nid == _cur_id) or (nid in _available)
+	# Labels only where they earn their pixels: the nodes you can act on NOW, plus the
+	# rare high-stakes types (boss/elite) you always want to spot from afar. Common locked
+	# nodes stay icon-only so a 15-node screen isn't tiled with competing dark pills.
+	if not lit and ntype != "boss" and ntype != "elite":
+		return
 	var center: Vector2 = _center_of(nid)
 	var r: float = NODE_R_AVAIL if (nid in _available) else NODE_R
-	var lit: bool = (nid == _cur_id) or (nid in _available)
 	var label: String = TYPE_LABELS.get(ntype, ntype.to_upper())
-	var col: Color = COL_WHITE if lit else Color(0.72, 0.72, 0.80, 0.85)
+	var col: Color = COL_WHITE if lit else Color(0.78, 0.74, 0.62, 0.92)
 	var font: Font = _font if _font != null else ThemeDB.fallback_font
 	Chrome.label_pill(self, font, center + Vector2(0.0, r + 15.0), label, 13, col)
 
 
+func _curve_points(a: Vector2, b: Vector2) -> PackedVector2Array:
+	# Quadratic bezier bowed off the straight line — reads as a path, not a taut wire.
+	var d: Vector2 = b - a
+	var perp: Vector2 = Vector2(-d.y, d.x).normalized()
+	var ctrl: Vector2 = (a + b) * 0.5 + perp * minf(d.length() * 0.16, 42.0)
+	var pts: PackedVector2Array = PackedVector2Array()
+	var steps: int = 10
+	for i in range(steps + 1):
+		var t: float = float(i) / float(steps)
+		var omt: float = 1.0 - t
+		pts.append(omt * omt * a + 2.0 * omt * t * ctrl + t * t * b)
+	return pts
+
+
 func _draw_header() -> void:
-	var panel := Rect2(0.0, 0.0, W, 40.0)
-	draw_rect(panel, Color(0.05, 0.04, 0.11, 0.82))
+	# Soft top-down scrim instead of a hard letterbox bar — the painting bleeds through
+	# under the title instead of being guillotined by a flat black band.
+	Chrome.vscrim(self, Rect2(0.0, 0.0, W, 60.0),
+		Color(0.05, 0.04, 0.11, 0.92), Color(0.05, 0.04, 0.11, 0.0))
 	_draw_text(Vector2(W * 0.5, 26.0), "Choose your path", 18,
 		Color(0.92, 0.86, 0.55), true)
 

@@ -100,12 +100,14 @@ func get_relic_rect() -> Rect2:
 	return Rect2(SIDE_X - 110.0, RELIC_Y - 80.0, 220.0, 160.0)
 
 
+# PURGE + Leave share one footer row (matching size + baseline) so the two peer
+# actions read as one deliberate control group, not two different alignment systems.
 func get_removal_rect() -> Rect2:
-	return Rect2(SIDE_X - 110.0, RELIC_Y + 110.0, 220.0, 52.0)
+	return Rect2(W * 0.5 - 210.0, H - 66.0, 200.0, 50.0)
 
 
 func get_leave_rect() -> Rect2:
-	return Rect2(W * 0.5 - 100.0, H - 70.0, 200.0, 50.0)
+	return Rect2(W * 0.5 + 10.0, H - 66.0, 200.0, 50.0)
 
 
 # ─── _draw ─────────────────────────────────────────────────────────────────────
@@ -114,10 +116,32 @@ func _draw() -> void:
 	_draw_background()
 	_draw_merchant()
 	_draw_header()
+	_draw_wares_backing()
 	_draw_cards()
 	_draw_relic_panel()
 	_draw_removal_button()
 	_draw_leave_button()
+
+
+func _draw_wares_backing() -> void:
+	# Bind the 3 for-sale cards into ONE display cluster (a soft framed shelf + a warm
+	# "display light" glow) and seat each card with a contact shadow — so the wares read
+	# as a deliberate group on a surface, not three tiles floating on the painting.
+	var r0: Rect2 = get_card_rect(0)
+	var r2: Rect2 = get_card_rect(2)
+	var pad: float = 22.0
+	var cluster := Rect2(r0.position.x - pad, r0.position.y - pad - 6.0,
+		(r2.end.x - r0.position.x) + pad * 2.0, r0.size.y + pad * 2.0 + 6.0)
+	draw_rect(cluster, Color(0.04, 0.03, 0.09, 0.42))
+	draw_rect(cluster, Color(0.62, 0.46, 0.90, 0.30), false, 1.5)
+	# Warm pool of display light behind the cards.
+	draw_circle(cluster.get_center(), cluster.size.x * 0.42, Color(0.95, 0.72, 0.35, 0.07))
+	# Per-card contact shadow on the cluster floor.
+	for i in 3:
+		var cr: Rect2 = get_card_rect(i)
+		draw_set_transform(Vector2(cr.get_center().x, cr.end.y + 6.0), 0.0, Vector2(1.0, 0.30))
+		draw_circle(Vector2.ZERO, cr.size.x * 0.52, Color(0.0, 0.0, 0.0, 0.30))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
 func _draw_background() -> void:
@@ -201,6 +225,10 @@ func _draw_card_slot(rect: Rect2, cid: String, cost: int, bought: bool, dim: boo
 	var border_col: Color = elem_col if not dim else Color(0.30, 0.28, 0.40, 0.60)
 	draw_rect(rect, border_col, false, 2.5)
 
+	# Sold cards recede hard — a dark veil reads "spent / gone", not merely dimmed.
+	if bought:
+		draw_rect(rect, Color(0.02, 0.02, 0.05, 0.55))
+
 	# Name panel (top strip) — solid scrim for legibility over the painting.
 	var top_h: float = rect.size.y * 0.20
 	draw_rect(Rect2(rect.position.x, rect.position.y, rect.size.x, top_h),
@@ -233,6 +261,11 @@ func _draw_relic_panel() -> void:
 
 	var rect: Rect2 = get_relic_rect()
 
+	# Contact shadow seating the relic display onto the scene.
+	draw_set_transform(Vector2(rect.get_center().x, rect.end.y + 4.0), 0.0, Vector2(1.0, 0.28))
+	draw_circle(Vector2.ZERO, rect.size.x * 0.46, Color(0.0, 0.0, 0.0, 0.28))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
 	# Panel
 	var bg_col: Color = Color(0.09, 0.07, 0.17, 0.88) if not dim else Color(0.06, 0.05, 0.11, 0.75)
 	draw_rect(rect, bg_col)
@@ -241,16 +274,9 @@ func _draw_relic_panel() -> void:
 
 	var label_col: Color = COL_WHITE if not dim else COL_DIM
 
-	# Header strip inside the panel
-	var strip_h: float = 28.0
-	draw_rect(Rect2(rect.position.x, rect.position.y, rect.size.x, strip_h),
-		Color(0.05, 0.04, 0.11, 0.82))
-	_draw_text(Vector2(rect.get_center().x, rect.position.y + strip_h * 0.60),
-		"RELIC", 13, Color(0.80, 0.65, 0.20, 0.90 if not dim else 0.45), true)
-
-	# Painted relic icon, then the name in reserved air BELOW it (never floated over the
-	# illustration). Fallback to the glow disc if art is missing.
-	var circ_c: Vector2 = Vector2(rect.get_center().x, rect.position.y + strip_h + 42.0)
+	# Painted relic icon — the art + name carry it, so no redundant "RELIC" header.
+	# Name sits in reserved air below the icon, cost at the foot.
+	var circ_c: Vector2 = Vector2(rect.get_center().x, rect.position.y + 48.0)
 	var rtex: Texture2D = _tex_relic.get(rid) if has_relic else null
 	if rtex != null:
 		if not dim:

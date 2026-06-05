@@ -53,7 +53,7 @@ const COL_HP_BAR    := Color(0.20, 0.78, 0.35)
 const COL_HP_BG     := Color(0.15, 0.15, 0.15)
 const COL_MANA      := Color(0.30, 0.55, 1.00)
 const COL_BLOCK     := Color(0.60, 0.75, 1.00)
-const COL_END_BTN   := Color(0.65, 0.25, 0.90)
+const COL_END_BTN   := Color(0.34, 0.27, 0.44)   # muted stone-violet — a confirm action, recessive (was loud magenta)
 const COL_END_HOVER := Color(0.80, 0.40, 1.00)
 const COL_SKIP_BTN  := Color(0.35, 0.35, 0.50)
 const COL_WHITE     := Color(1, 1, 1)
@@ -577,6 +577,7 @@ func _draw() -> void:
 		_draw_reward_overlay()
 		return
 
+	_draw_ground_vignette()
 	_draw_enemy()
 	_draw_death_particles()
 	_draw_player_hud()
@@ -630,6 +631,13 @@ func _draw_background() -> void:
 
 
 # ─── Enemy ────────────────────────────────────────────────────────────────────
+
+func _draw_ground_vignette() -> void:
+	# Soft darkened floor under the hand + HUD so they read as set INTO the chamber, not
+	# floating on a hard seam across a wallpaper. Drawn over the bg, behind all actors.
+	_draw_vscrim(Rect2(0.0, 478.0, W, H - 478.0),
+		Color(0.03, 0.02, 0.07, 0.0), Color(0.03, 0.02, 0.07, 0.42))
+
 
 func _draw_enemy() -> void:
 	if _combat == null:
@@ -747,15 +755,21 @@ func _draw_enemy() -> void:
 	var intent_y_off: float = (1.0 - _intent_alpha) * -6.0
 	var intent_cy: float = bar_y - 55.0 + intent_y_off
 	if intent_type != "":
-		# Bolder, larger telegraph — instant "it's going to hit me for N".
-		_draw_intent_icon(Vector2(ENEMY_X - 28.0, intent_cy), intent_type, 13.0,
+		# Threat glow behind the telegraph so "it will hit me for N" reads as the most
+		# urgent thing above the enemy — a HOT coloured halo (heat, not a dark hole), so
+		# bright inner + soft outer in the intent's own hue (red=attack, blue=defend).
+		draw_circle(Vector2(ENEMY_X, intent_cy + 2.0), 30.0,
+			Color(intent_col.r, intent_col.g, intent_col.b, 0.18 * intent_a))
+		draw_circle(Vector2(ENEMY_X, intent_cy + 2.0), 16.0,
+			Color(intent_col.r, intent_col.g, intent_col.b, 0.32 * intent_a))
+		_draw_intent_icon(Vector2(ENEMY_X - 30.0, intent_cy), intent_type, 16.0,
 			Color(intent_col.r, intent_col.g, intent_col.b, intent_a))
 		if intent_type == "attack" or intent_type == "defend":
-			_draw_text_alpha(Vector2(ENEMY_X + 16.0, intent_cy + 7.0), str(intent_val),
-				20, intent_col, true, intent_a)
+			_draw_text_alpha(Vector2(ENEMY_X + 18.0, intent_cy + 8.0), str(intent_val),
+				25, intent_col, true, intent_a)
 		elif intent_type == "enrage":
-			_draw_text_alpha(Vector2(ENEMY_X + 20.0, intent_cy + 6.0), "RAGE",
-				14, intent_col, true, intent_a)
+			_draw_text_alpha(Vector2(ENEMY_X + 22.0, intent_cy + 6.0), "RAGE",
+				16, intent_col, true, intent_a)
 
 	# Status icons (flame = burn, snowflake = chill) in a row at the enemy's feet,
 	# with the pulse scale-pop. Code-drawn so they stay crisp at small size.
@@ -1130,10 +1144,10 @@ func _draw_end_turn_button() -> void:
 	# Rendered button: drop shadow, vertical-gradient body, top gloss, bevel frame.
 	var r := END_BTN_RECT
 	draw_rect(Rect2(r.position + Vector2(0.0, 3.0), r.size), Color(0, 0, 0, 0.40))
-	_draw_vscrim(r, COL_END_BTN.lerp(Color(1, 1, 1), 0.22), COL_END_BTN.darkened(0.32))
-	draw_rect(Rect2(r.position + Vector2(2.0, 2.0), Vector2(r.size.x - 4.0, r.size.y * 0.40)), Color(1, 1, 1, 0.18))
+	_draw_vscrim(r, COL_END_BTN.lerp(Color(1, 1, 1), 0.14), COL_END_BTN.darkened(0.34))
+	draw_rect(Rect2(r.position + Vector2(2.0, 2.0), Vector2(r.size.x - 4.0, r.size.y * 0.40)), Color(1, 1, 1, 0.10))
 	draw_rect(r, COL_END_BTN.darkened(0.55), false, 2.5)
-	draw_rect(Rect2(r.position + Vector2(2.0, 1.0), Vector2(r.size.x - 4.0, 1.0)), Color(1, 1, 1, 0.22))
+	draw_rect(Rect2(r.position + Vector2(2.0, 1.0), Vector2(r.size.x - 4.0, 1.0)), Color(1, 1, 1, 0.14))
 	_draw_text_shadow(r.get_center() + Vector2(0.0, 5.0), "End Turn", 15, COL_WHITE, true)
 
 
