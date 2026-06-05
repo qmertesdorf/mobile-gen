@@ -131,8 +131,34 @@ const CARDS := {
 	},
 }
 
+const UPGRADES := {
+	"arcane_bolt": {"id": "arcane_bolt+", "name": "Arcane Bolt+", "element": "neutral", "cost": 1, "type": "attack", "effect": {"damage": 9}},
+	"ward":        {"id": "ward+",        "name": "Ward+",        "element": "neutral", "cost": 1, "type": "skill",  "effect": {"block": 8}},
+	"ember":       {"id": "ember+",       "name": "Ember+",       "element": "fire",    "cost": 1, "type": "attack", "effect": {"damage": 7, "burn": 3}},
+	"frost_shard": {"id": "frost_shard+", "name": "Frost Shard+", "element": "ice",     "cost": 1, "type": "attack", "effect": {"damage": 6, "block": 6}},
+	"spark":       {"id": "spark+",       "name": "Spark+",       "element": "lightning","cost": 0, "type": "attack", "effect": {"damage": 4, "lightning_bonus": 4}},
+	"chain_lightning": {"id": "chain_lightning+", "name": "Chain Lightning+", "element": "lightning", "cost": 1, "type": "attack", "effect": {"damage": 7, "lightning_bonus": 8}},
+}
+
 static func card(id: String) -> Dictionary:
-	return CARDS.get(id, {})
+	if CARDS.has(id):
+		return CARDS[id]
+	# upgraded ids: find the upgrade def whose id matches.
+	for base in UPGRADES:
+		if UPGRADES[base]["id"] == id:
+			return UPGRADES[base]
+	return {}
+
+# Upgraded id for a base card, or the same id if it has no upgrade / is already upgraded.
+static func upgrade_id(id: String) -> String:
+	if is_upgraded(id):
+		return id
+	if UPGRADES.has(id):
+		return UPGRADES[id]["id"]
+	return id
+
+static func is_upgraded(id: String) -> bool:
+	return id.ends_with("+")
 
 static func starter_deck() -> Array:
 	return [

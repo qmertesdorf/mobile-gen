@@ -276,6 +276,21 @@ func _init() -> void:
 	rb.resolve_event_choice(ev, gold_choice)
 	if rb.gold != g11 + delta11:
 		_fail("event gold effect not applied"); return
+	# Stage 12: card upgrades — upgraded card has a stronger effect and upgrades once.
+	var base_card: Dictionary = CardDB.card("arcane_bolt")
+	var up_id: String = CardDB.upgrade_id("arcane_bolt")
+	if up_id == "arcane_bolt" or up_id == "":
+		_fail("arcane_bolt has no upgrade id"); return
+	var up_card: Dictionary = CardDB.card(up_id)
+	if up_card.is_empty():
+		_fail("upgraded card def not found"); return
+	if up_card.effect.get("damage", 0) <= base_card.effect.get("damage", 0):
+		_fail("upgraded arcane_bolt is not stronger"); return
+	# An already-upgraded card does not upgrade again.
+	if CardDB.upgrade_id(up_id) != up_id:
+		_fail("an upgraded card should not upgrade further"); return
+	if not CardDB.is_upgraded(up_id):
+		_fail("is_upgraded should be true for the upgraded id"); return
 	# --- end stages ---
 	print("SELFTEST OK")
 	quit(0)
