@@ -8,6 +8,7 @@ extends RefCounted
 const CardDB := preload("res://data/CardDB.gd")
 const CombatState := preload("res://CombatState.gd")
 const EnemyDB := preload("res://data/EnemyDB.gd")
+const EventDB := preload("res://data/EventDB.gd")
 const MetaSave := preload("res://MetaSave.gd")
 const RelicDB := preload("res://data/RelicDB.gd")
 const MapGen := preload("res://MapGen.gd")
@@ -258,6 +259,31 @@ func on_boss_defeated() -> void:
 
 	meta.save_state(state)
 	_complete = true
+
+
+func roll_event() -> Dictionary:
+	var ids: Array = EventDB.all_ids()
+	var pick: String = ids[rng.randi_range(0, ids.size() - 1)]
+	return EventDB.event(pick)
+
+
+func resolve_event_choice(ev: Dictionary, choice_index: int) -> void:
+	var choices: Array = ev.get("choices", [])
+	if choice_index < 0 or choice_index >= choices.size():
+		return
+	var fx: Dictionary = choices[choice_index].get("effects", {})
+	if fx.has("gold"):
+		gold = max(0, gold + int(fx["gold"]))
+	if fx.has("hp"):
+		run_hp = clampi(run_hp + int(fx["hp"]), 0, run_max_hp)
+	if fx.has("add_card"):
+		deck.append(String(fx["add_card"]))
+	if fx.get("remove_card", false) and not deck.is_empty():
+		deck.remove_at(0)
+	if fx.has("relic"):
+		var rid: String = String(fx["relic"])
+		if not (rid in relics):
+			relics.append(rid)
 
 
 # TEST-ONLY: walk the map greedily to the boss node and invoke the boss-win path

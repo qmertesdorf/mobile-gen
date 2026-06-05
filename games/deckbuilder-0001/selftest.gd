@@ -252,6 +252,30 @@ func _init() -> void:
 	ra.gold = 0
 	if ra.buy_card(shop, 1):
 		_fail("buying with 0 gold should be rejected"); return
+	# Stage 11: events — a chosen choice applies its outcome effects to the run.
+	var RCb := load("res://RunController.gd")
+	var rb = RCb.new()
+	rb.start_run(SEED)
+	rb.gold = 100
+	rb.run_hp = 50
+	# roll_event returns a real, non-empty event with choices.
+	var rolled: Dictionary = rb.roll_event()
+	if rolled.get("choices", []).is_empty():
+		_fail("roll_event returned an event with no choices"); return
+	# Resolve a known gold-granting choice deterministically (cursed_altar: +60 gold, -10 hp).
+	var EventDB11 := load("res://data/EventDB.gd")
+	var ev: Dictionary = EventDB11.event("cursed_altar")
+	var gold_choice: int = -1
+	for i in ev["choices"].size():
+		if ev["choices"][i].get("effects", {}).has("gold"):
+			gold_choice = i; break
+	if gold_choice < 0:
+		_fail("cursed_altar has no gold choice"); return
+	var g11: int = rb.gold
+	var delta11: int = ev["choices"][gold_choice]["effects"]["gold"]
+	rb.resolve_event_choice(ev, gold_choice)
+	if rb.gold != g11 + delta11:
+		_fail("event gold effect not applied"); return
 	# --- end stages ---
 	print("SELFTEST OK")
 	quit(0)
