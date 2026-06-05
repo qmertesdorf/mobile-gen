@@ -50,39 +50,210 @@
     "orientation": "landscape"
   },
   "assets": [
-    { "type": "background", "name": "chamber", "source": "art/bg_chamber.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_arcane_bolt", "source": "art/card_arcane_bolt.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_ward", "source": "art/card_ward.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_meditate", "source": "art/card_meditate.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_mana_surge", "source": "art/card_mana_surge.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_ember", "source": "art/card_ember.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_flame_lash", "source": "art/card_flame_lash.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_immolate", "source": "art/card_immolate.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_wildfire", "source": "art/card_wildfire.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_frost_shard", "source": "art/card_frost_shard.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_glacial_wall", "source": "art/card_glacial_wall.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_freeze", "source": "art/card_freeze.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_blizzard", "source": "art/card_blizzard.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_spark", "source": "art/card_spark.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_chain_lightning", "source": "art/card_chain_lightning.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_overload", "source": "art/card_overload.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_thunderclap", "source": "art/card_thunderclap.png", "origin": "raster" },
-    { "type": "sprite", "name": "enemy_imp", "source": "art/enemy_imp.png", "origin": "raster" },
-    { "type": "sprite", "name": "enemy_frost_wraith", "source": "art/enemy_frost_wraith.png", "origin": "raster" },
-    { "type": "sprite", "name": "enemy_golem", "source": "art/enemy_golem.png", "origin": "raster" },
-    { "type": "sprite", "name": "enemy_archmage", "source": "art/enemy_archmage.png", "origin": "raster" },
-    { "type": "sprite", "name": "card_back", "source": "art/card_back.png", "origin": "raster" },
-    { "type": "sprite", "name": "relic_ember_heart", "source": "art/relic_ember_heart.png", "origin": "raster" },
-    { "type": "sprite", "name": "token_mana", "source": "art/token_mana.png", "origin": "raster" },
-    { "type": "sprite", "name": "token_shield", "source": "art/token_shield.png", "origin": "raster" },
-    { "type": "sprite", "name": "token_plate", "source": "art/token_plate.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_mana", "source": "art/icon_mana.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_burn", "source": "art/icon_burn.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_chill", "source": "art/icon_chill.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_attack", "source": "art/icon_attack.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_defend", "source": "art/icon_defend.png", "origin": "raster" },
-    { "type": "sprite", "name": "icon_gem", "source": "art/icon_gem.png", "origin": "raster" },
-    { "type": "font", "name": "ui_font", "source": "art/ui_font.ttf", "origin": "font" }
+    {
+      "type": "background",
+      "name": "chamber",
+      "source": "art/bg_chamber.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_arcane_bolt",
+      "source": "art/card_arcane_bolt.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_ward",
+      "source": "art/card_ward.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_meditate",
+      "source": "art/card_meditate.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_mana_surge",
+      "source": "art/card_mana_surge.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_ember",
+      "source": "art/card_ember.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_flame_lash",
+      "source": "art/card_flame_lash.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_immolate",
+      "source": "art/card_immolate.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_wildfire",
+      "source": "art/card_wildfire.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_frost_shard",
+      "source": "art/card_frost_shard.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_glacial_wall",
+      "source": "art/card_glacial_wall.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_freeze",
+      "source": "art/card_freeze.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_blizzard",
+      "source": "art/card_blizzard.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_spark",
+      "source": "art/card_spark.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_chain_lightning",
+      "source": "art/card_chain_lightning.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_overload",
+      "source": "art/card_overload.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_thunderclap",
+      "source": "art/card_thunderclap.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_imp",
+      "source": "art/enemy_imp.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_frost_wraith",
+      "source": "art/enemy_frost_wraith.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_golem",
+      "source": "art/enemy_golem.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "enemy_archmage",
+      "source": "art/enemy_archmage.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "card_back",
+      "source": "art/card_back.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "relic_ember_heart",
+      "source": "art/relic_ember_heart.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "token_mana",
+      "source": "art/token_mana.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "token_shield",
+      "source": "art/token_shield.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "token_plate",
+      "source": "art/token_plate.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_mana",
+      "source": "art/icon_mana.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_burn",
+      "source": "art/icon_burn.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_chill",
+      "source": "art/icon_chill.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_attack",
+      "source": "art/icon_attack.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_defend",
+      "source": "art/icon_defend.png",
+      "origin": "raster"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_gem",
+      "source": "art/icon_gem.png",
+      "origin": "raster"
+    },
+    {
+      "type": "font",
+      "name": "ui_font",
+      "source": "art/ui_font.ttf",
+      "origin": "font"
+    },
+    {
+      "type": "sprite",
+      "name": "icon_lightning",
+      "source": "art/icon_lightning.png",
+      "origin": "raster"
+    }
   ],
   "validation": {
     "issues": [],
@@ -128,22 +299,149 @@
       "relic:ember_heart",
       "painted UI tokens: token_mana (mana crystal), token_shield (block shield), token_plate (medallion icon/value backing)",
       "painted UI icons: icon_mana/burn/chill/attack/defend/gem",
-      "themed display font ui_font.ttf (Lilita One) wired project-wide (draw_string + Label overrides) so digits aren't ThemeDB-fallback programmer-art"
+      "themed display font ui_font.ttf (Lilita One) wired project-wide (draw_string + Label overrides) so digits aren't ThemeDB-fallback programmer-art",
+      "element pips: per-element painted glyph on the card medallion (fire=flame, ice=shard, lightning=icon_lightning bolt, neutral=gem) replacing the single iridescent gem on every card — the pip now signals element by shape+colour (accessibility + fidelity)",
+      "warm/cool status discs: amber halo+tint for Burn, cyan for Chill, so the two shared-plate medallions read warm-vs-cool at a glance (was the same violet disc)"
     ],
     "left_primitive": [
       "all juice/motion (screen shake, card-cast arc ghost, number pop-ups, death dissolve+particles, HP/mana tweens, status pulses, intent telegraph) — motion not art",
-      "code-drawn chrome composited OVER the painted art so one renderer serves every card/state: card legibility panels + name/type/effect text + element border + cost badge, HUD plate, HP bars (player+enemy), mana-orb glow, End Turn/Skip buttons, pile-count + status-count numerals, intent value, win/lose/reward overlays — runtime data/text on top of the painted assets"
+      "ALL HUD/overlay chrome is DELIBERATE styled code, composited over the painted art so one renderer serves every card/state: the HUD plate (gradient body + accent strip + bevel + corner ticks), End Turn/Skip buttons (gradient + gloss + bevel), win/lose/reward banner panels, HP bars (player+enemy), the per-card legibility panels + name/type/effect text + element border + cost badge, and the MANA ORBS (bright radial code orb — the generated mana token rendered too dark/muddy). A painted 9-slice gold frame over these was tried this pass and owner-rejected in live play as lumpy/janky (generation will not yield a clean symmetric tileable frame) — clean styled code is the right call for wide dynamic UI chrome.",
+      "pile-count + status-count numerals, intent value, reward/win/lose overlay text — runtime values drawn on solid backing pills / tight outlines over the painted assets"
     ],
     "art_path": "games/deckbuilder-0001/art/",
-    "notes": "METHOD CHANGED svg->raster: the earlier SVG sigil-vector pass was owner-rejected as not-shippable ('rudimentary, fine for POC'); raster is the project default and the right call for representational creature/spell art, so this asset_pass record was reconciled to the shipped raster reality. KEY STYLE FINDING: Juggernaut XL (photoreal base) fought the flat-cartoon target through ~9 imp + ~9 card regens (whack-a-mole; the chain_lightning abstract effect kept collapsing to scenes) — swapping the CHECKPOINT to cartoonArcadiaXL_v2 did what prompt-tuning couldn't and solved cross-asset cohesion for free (every asset inherits one hand). Cards reframed first-person caster-POV to stop abstract-effect collapse and tie each spell to the world. SWAP MECHANISM: draw_texture*-in-place in the builder's single-_draw immediate-mode renderer (textures load once in _ready, replace primitives in _draw_background/_draw_enemy/_draw_card_face/etc., preserving z-order+shake+juice); every helper guards on a null texture and falls back to the primitive. Grain fixed via mipmaps/generate=true on every downscaled .import + TEXTURE_FILTER_LINEAR_WITH_MIPMAPS. Painted UI-token pass (mana/shield/plate + 6 icons + card-back + relic) holds code-drawn chrome to the painted-art bar. COMPOSITED + COLOUR-ACCESSIBILITY AUDIT (this pass, busy-state + reward-overlay screenshots, 3-4x magnified pairing crops): fixed block-value numeral contrast (was near-black on the shield's dark boss -> bright), added a solid backing pill behind the reward-overlay title (was gold-on-busy), pushed Burn/Chill count numerals clear of their medallion plates onto small backing pills (+ wider status spacing), and solidified the enemy name/intent/HP panel (0.66->0.82) over the bright runic portal; re-render re-audit clean. selftest still SELFTEST OK (rules untouched). RECIPE PROVENANCE: comfy.mjs takes the recipe JSON as a CLI arg and does not persist it, and the final Cartoon Arcadia recipes were not logged during the iterative probe, so exact per-asset seeds/negatives are unrecoverable; the committed PNGs are canonical (GPU gen is non-deterministic anyway). The recipes[] below record the locked checkpoint + proven params + per-asset subject as honest partial provenance (seed omitted where uncaptured); the full locked style profile lives in visual_system.style/prompt_scaffold.",
+    "notes": "METHOD CHANGED svg->raster: the earlier SVG sigil-vector pass was owner-rejected as not-shippable ('rudimentary, fine for POC'); raster is the project default and the right call for representational creature/spell art, so this asset_pass record was reconciled to the shipped raster reality. KEY STYLE FINDING: Juggernaut XL (photoreal base) fought the flat-cartoon target through ~9 imp + ~9 card regens (whack-a-mole; the chain_lightning abstract effect kept collapsing to scenes) — swapping the CHECKPOINT to cartoonArcadiaXL_v2 did what prompt-tuning couldn't and solved cross-asset cohesion for free (every asset inherits one hand). Cards reframed first-person caster-POV to stop abstract-effect collapse and tie each spell to the world. SWAP MECHANISM: draw_texture*-in-place in the builder's single-_draw immediate-mode renderer (textures load once in _ready, replace primitives in _draw_background/_draw_enemy/_draw_card_face/etc., preserving z-order+shake+juice); every helper guards on a null texture and falls back to the primitive. Grain fixed via mipmaps/generate=true on every downscaled .import + TEXTURE_FILTER_LINEAR_WITH_MIPMAPS. Painted UI-token pass (mana/shield/plate + 6 icons + card-back + relic) holds code-drawn chrome to the painted-art bar. COMPOSITED + COLOUR-ACCESSIBILITY AUDIT (this pass, busy-state + reward-overlay screenshots, 3-4x magnified pairing crops): fixed block-value numeral contrast (was near-black on the shield's dark boss -> bright), added a solid backing pill behind the reward-overlay title (was gold-on-busy), pushed Burn/Chill count numerals clear of their medallion plates onto small backing pills (+ wider status spacing), and solidified the enemy name/intent/HP panel (0.66->0.82) over the bright runic portal; re-render re-audit clean. selftest still SELFTEST OK (rules untouched). RECIPE PROVENANCE: comfy.mjs takes the recipe JSON as a CLI arg and does not persist it, and the final Cartoon Arcadia recipes were not logged during the iterative probe, so exact per-asset seeds/negatives are unrecoverable; the committed PNGs are canonical (GPU gen is non-deterministic anyway). The recipes[] below record the locked checkpoint + proven params + per-asset subject as honest partial provenance (seed omitted where uncaptured); the full locked style profile lives in visual_system.style/prompt_scaffold. || VISUAL-AUDIT + TARGETED RASTER REGEN PASS (2026-06-04): the visual-audit skill graded the composited screen across all 5 states (busy combat / boss / reward / win / lose) via fresh per-lens auditors. CHROME-CODE fixes (logic frozen, SELFTEST OK): HP-bar value is now an OUTLINED numeral (no opaque pill punching a gap into the green fill — the segmented-bar bug, worst at boss 88/110); block-shield numerals white+heavy-outline (were grey-on-silver after the shield-token swap); status counts on solid pills + wider disc spacing (were touching the neighbour); reward screen draws ONLY bg+modal (the live combat header was bleeding through the scrim). ASSET-PRODUCTION fixes (owner chose full painted 9-slice): per-element card pips (icon_lightning bolt + reused flame/shard/gem) so the pip signals element by shape+colour instead of one rainbow gem; warm/cool element halo+tint on the Burn/Chill medallions; and a painted GOLD 9-SLICE FRAME (token_frame_gold) drawn via a manual nine-patch (_draw_nine_patch) over code fills, wrapping the HUD panel, win/lose banners, and End/Skip buttons. MIXED-METHOD HONESTY: wide dynamic UI chrome (HP-bar gauge, per-card legibility panels) fights LayerDiffuse generation (probes: black-box alpha button, emblem-in-center panel, 2-line hollow gauge) so they stay styled-code by design. Re-rendered + re-audited with fresh eyes after each fix; final sweep clean (mana orbs lifted to clear the new gold bottom rail). New PNGs: icon_lightning, token_frame_gold. || FRAME REVERT (2026-06-04, owner live-playtest feedback): the full painted 9-slice gold frame (token_frame_gold over code fills on HUD/buttons/banners) looked lumpy/janky in-game — asymmetric corners, uneven rails, stuck-on studs — because LayerDiffuse/SDXL will not yield a clean symmetric tileable UI frame. Owner chose to REVERT all panels/buttons/banners to the prior clean styled-code chrome (which sits cleanly); token_frame_gold deleted. ALSO this pass: mana orbs reverted from the painted token_mana (rendered dark/muddy on the dark panel) to a bright radial CODE orb (per the project gen-renders-mana-dark finding), and the HP-bar value outline tightened (spread 0.6) so it is not chunky. RETAINED wins from the regen attempt: per-element card pips (icon_lightning bolt + reused flame/shard/gem so the pip signals element by shape+colour) and the warm/cool Burn/Chill status medallions. LESSON: wide dynamic UI chrome (panels, buttons, bars) is a genuine medium-fight for raster gen — keep it styled-code (mixed-method honesty); reserve raster tokens for centered-subject art (cards, enemies, small element glyphs). selftest still SELFTEST OK.",
     "recipes": [
-      { "name": "bg_chamber", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + a candle-lit arcane duelling chamber of indigo-violet stone ringed with glowing runes, glowing floor runic circle, pillars, depth", "sampler": "euler", "steps": 24, "cfg": 7, "width": 1280, "height": 720, "layerdiffuse": false, "note": "opaque full-frame background (no LayerDiffuse), exact 1280x720 viewport aspect to avoid squish. Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "enemy_imp", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + single centered full-body small impish fire-demon, curved horns, bat wings, barbed tail, glowing amber eyes, ember aura, clean transparent background", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": true, "note": "flat-cartoon enemy sprite via LayerDiffuse RGBA. Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "enemy_frost_wraith", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + single centered full-body tall hooded floating frost wraith, tattered icy shroud, cyan glow, clean transparent background", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": true, "note": "Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "enemy_golem", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + single centered full-body broad violet-stone golem construct, glowing belt-core, heavy fists, clean transparent background", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": true, "note": "Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "enemy_archmage", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + single centered full-body robed archmage boss, pointed hat, glowing rune-staff, violet lightning aura, clean transparent background", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": true, "note": "boss. Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "card_thunderclap", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold (CARD POV) + first-person view down the caster's two outstretched hands, a blast of violet-white lightning bursting outward in the arcane chamber", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": false, "note": "Representative of the 16 full-bleed POV card illustrations — same CARD scaffold + params, each with its own named-spell subject (fire/ice/lightning/neutral). Opaque full-bleed (chrome code-drawn). Exact per-card seeds/negatives not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } },
-      { "name": "card_back", "checkpoint": "cartoonArcadiaXL_v2", "prompt": "scaffold + an arcane spell card back, concentric violet rune circle, symmetrical, no text", "sampler": "euler", "steps": 24, "cfg": 7, "master_resolution": 1024, "layerdiffuse": false, "note": "shared draw/discard pile-stack back. Exact seed/negative not captured.", "import_settings": { "mipmaps": true, "filter": "linear", "compression": "lossless" } }
+      {
+        "name": "bg_chamber",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + a candle-lit arcane duelling chamber of indigo-violet stone ringed with glowing runes, glowing floor runic circle, pillars, depth",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "width": 1280,
+        "height": 720,
+        "layerdiffuse": false,
+        "note": "opaque full-frame background (no LayerDiffuse), exact 1280x720 viewport aspect to avoid squish. Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "enemy_imp",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + single centered full-body small impish fire-demon, curved horns, bat wings, barbed tail, glowing amber eyes, ember aura, clean transparent background",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": true,
+        "note": "flat-cartoon enemy sprite via LayerDiffuse RGBA. Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "enemy_frost_wraith",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + single centered full-body tall hooded floating frost wraith, tattered icy shroud, cyan glow, clean transparent background",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": true,
+        "note": "Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "enemy_golem",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + single centered full-body broad violet-stone golem construct, glowing belt-core, heavy fists, clean transparent background",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": true,
+        "note": "Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "enemy_archmage",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + single centered full-body robed archmage boss, pointed hat, glowing rune-staff, violet lightning aura, clean transparent background",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": true,
+        "note": "boss. Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "card_thunderclap",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold (CARD POV) + first-person view down the caster's two outstretched hands, a blast of violet-white lightning bursting outward in the arcane chamber",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": false,
+        "note": "Representative of the 16 full-bleed POV card illustrations — same CARD scaffold + params, each with its own named-spell subject (fire/ice/lightning/neutral). Opaque full-bleed (chrome code-drawn). Exact per-card seeds/negatives not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "card_back",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "scaffold + an arcane spell card back, concentric violet rune circle, symmetrical, no text",
+        "sampler": "euler",
+        "steps": 24,
+        "cfg": 7,
+        "master_resolution": 1024,
+        "layerdiffuse": false,
+        "note": "shared draw/discard pile-stack back. Exact seed/negative not captured.",
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        }
+      },
+      {
+        "name": "icon_lightning",
+        "checkpoint": "cartoonArcadiaXL_v2",
+        "prompt": "flat bold cartoon vector game icon, a single zigzag thunderbolt lightning symbol, filled solid bright electric violet and glowing white, luminous neon bolt, thin clean outline, bold minimal flat icon, clean transparent background",
+        "negative": "logo, watermark, text, photorealistic, 3d render, scene, multiple bolts, frame, border, ring, ground, shadow, anime, manga, mountain, soundwave, wave, blob, black fill, dark interior, hollow, gray interior, realistic, smoke, cluttered, gemstone, medallion",
+        "seed": 71067,
+        "sampler": "euler",
+        "steps": 26,
+        "cfg": 7,
+        "master_resolution": 512,
+        "layerdiffuse": true,
+        "import_settings": {
+          "mipmaps": true,
+          "filter": "linear",
+          "compression": "lossless"
+        },
+        "note": "element pip + card-area glyph for the lightning element (reused as the lightning status/pip). Took 3 regens: an abstract bolt symbol collapsed to a glowing mound, then a black-filled bolt, before a bright white-core violet-glow bolt landed (micro-asset quality bar)."
+      }
     ]
   }
 }

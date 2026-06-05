@@ -102,7 +102,6 @@ var _tex_relic: Dictionary = {}    # relic id -> Texture2D
 var _tex_icon: Dictionary = {}     # ui icon name -> Texture2D (painted, cohesive)
 var _relics: Array = []            # relic ids held by the player (set via refresh)
 var _font: Font = null             # themed display font (Lilita One); ThemeDB fallback if missing
-var _tex_mana: Texture2D = null    # painted mana crystal token (filled bright / spent dim)
 var _tex_shield: Texture2D = null  # painted block/shield token
 var _tex_plate: Texture2D = null   # painted medallion plate (icon/value backing)
 
@@ -201,13 +200,13 @@ func _ready() -> void:
 		"attack": _try_load("res://art/icon_attack.png"),
 		"defend": _try_load("res://art/icon_defend.png"),
 		"gem":    _try_load("res://art/icon_gem.png"),
+		"lightning": _try_load("res://art/icon_lightning.png"),
 	}
 
 	# Themed display font — generic ThemeDB fallback digits read as programmer-art
 	# next to the painted set, so wire one cartoon display face project-wide.
 	if ResourceLoader.exists("res://art/ui_font.ttf"):
 		_font = load("res://art/ui_font.ttf")
-	_tex_mana = _try_load("res://art/token_mana.png")
 	_tex_shield = _try_load("res://art/token_shield.png")
 	_tex_plate = _try_load("res://art/token_plate.png")
 
@@ -565,6 +564,14 @@ func _draw() -> void:
 	if _combat == null:
 		return
 
+	# Reward is a dedicated screen: draw ONLY the background + the reward overlay, not
+	# the live combat board. Drawing the board underneath let the bright enemy header
+	# (intent number, name, HP) bleed through the scrim above the reward title; a clean
+	# background reads as a proper modal instead of a busy combat frame with a dim panel.
+	if _state == STATE_REWARD:
+		_draw_reward_overlay()
+		return
+
 	_draw_enemy()
 	_draw_death_particles()
 	_draw_player_hud()
@@ -573,9 +580,6 @@ func _draw() -> void:
 	_draw_cast_ghost()
 	_draw_pile_counts()
 	_draw_end_turn_button()
-
-	if _state == STATE_REWARD:
-		_draw_reward_overlay()
 
 
 # ─── Background ───────────────────────────────────────────────────────────────
@@ -759,15 +763,20 @@ func _draw_enemy() -> void:
 	if chill_n > 0:
 		active.append(["chill", chill_n])
 	var sy: float = ENEMY_Y + 150.0
-	var sx: float = ENEMY_X - (active.size() - 1) * 28.0
+	var sx: float = ENEMY_X - (active.size() - 1) * 33.0
 	for entry in active:
 		var kind: String = entry[0]
 		var n: int = entry[1]
 		var pulse_s: float = 1.0 + _status_pulse.get(kind, 0.0) * 0.5
 		var r: float = 11.0 * pulse_s
 		var ring: Color = COL_FIRE if kind == "burn" else COL_ICE
-		# Soft rendered disc backing (element-coloured rim) so the icon reads seated.
-		_draw_token_disc(Vector2(sx, sy), r + 4.0, ring, dissolve_alpha)
+		# Element halo AROUND the violet medallion (the plate is opaque and the same colour
+		# for both, so the warm/cool cue must sit OUTSIDE it) + a warm/cool tint ON the plate,
+		# so Burn reads amber and Chill reads cyan at a glance, not two identical purple discs.
+		var plate_out: float = (r + 4.0) * 1.95
+		draw_circle(Vector2(sx, sy), plate_out + 8.0, Color(ring.r, ring.g, ring.b, 0.20 * dissolve_alpha))
+		draw_circle(Vector2(sx, sy), plate_out + 4.0, Color(ring.r, ring.g, ring.b, 0.32 * dissolve_alpha))
+		_draw_token_disc(Vector2(sx, sy), r + 4.0, ring, dissolve_alpha, ring.lerp(COL_WHITE, 0.55))
 		var stex: Texture2D = _tex_icon.get(kind)
 		if stex != null:
 			var iz: float = r * 1.55
@@ -777,10 +786,16 @@ func _draw_enemy() -> void:
 			_draw_flame_icon(Vector2(sx, sy), r, dissolve_alpha)
 		else:
 			_draw_snowflake_icon(Vector2(sx, sy), r, dissolve_alpha)
-		var _cnx: float = sx + r + 16.0
-		draw_rect(Rect2(_cnx - 8.0, sy - 3.0, 16.0, 18.0), Color(0.04, 0.03, 0.09, 0.78))
-		_draw_text_shadow(Vector2(_cnx, sy + 5.0), str(n), 13, COL_WHITE, true)
-		sx += 56.0
+		# Count on a SOLID pill sized to the glyph, clear of the next disc (spacing
+		# widened to 66 so the number never grazes the neighbouring ring), plus an
+		# outline so it survives the bright flame/ice art directly behind it.
+		var _cstr := str(n)
+		var _cnx: float = sx + r + 15.0
+		var _cf: Font = _font if _font != null else ThemeDB.fallback_font
+		var _cw: float = _cf.get_string_size(_cstr, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x if _cf != null else 10.0
+		draw_rect(Rect2(_cnx - _cw * 0.5 - 5.0, sy - 9.0, _cw + 10.0, 22.0), Color(0.04, 0.03, 0.09, 0.88))
+		_draw_text_outlined(Vector2(_cnx, sy + 5.0), _cstr, 14, COL_WHITE, Color(0.0, 0.0, 0.0, 0.9))
+		sx += 66.0
 
 
 # ─── Death particles (drawn separately so they outlast the dissolving body) ───
@@ -813,6 +828,8 @@ func _draw_player_hud() -> void:
 
 	# Panel — arcane plate: gradient body, accent strip, inner bevel, bold frame,
 	# corner notches. Less flat than a plain rect next to the painted art.
+	# Panel — arcane plate: gradient body, accent strip, inner bevel, bold frame,
+	# corner notches. Clean styled code chrome (sits cleanly next to the painted art).
 	var px: float = 20.0
 	var py: float = 555.0
 	var pw: float = 200.0
@@ -826,14 +843,14 @@ func _draw_player_hud() -> void:
 	draw_rect(panel_r, Color(0.10, 0.05, 0.18, 0.90), false, 2.0)               # outer frame
 	_draw_corner_ticks(panel_r, 10.0, Color(0.80, 0.62, 1.0, 0.85))
 
-	# HP — styled bar with the value CENTERED on it (no overlap).
+	# HP — styled bar with the value centered on it (outlined, fill continuous).
 	_draw_text(Vector2(px + 10, py + 18), "HP", 12, COL_HP_BAR)
 	var disp_hp: float = _disp_player_hp if _disp_player_hp >= 0.0 else float(php)
 	var hp_frac: float = clamp(disp_hp / float(phmax), 0.0, 1.0)
 	_draw_hp_bar(Rect2(px + 38.0, py + 10.0, pw - 50.0, 17.0), hp_frac, COL_HP_BAR,
 		"%d / %d" % [php, phmax])
 
-	# Mana orbs — styled (base + glow + highlight + bold outline).
+	# Mana orbs — bright code orbs (the painted token rendered too dark/muddy).
 	_draw_text(Vector2(px + 10, py + 44), "Mana", 12, COL_MANA)
 	for i in mnmax:
 		_draw_mana_orb(Vector2(px + 16.0 + i * 24.0, py + 72.0), i < mn)
@@ -920,6 +937,21 @@ func _draw_text_shadow(pos: Vector2, text: String, size: int, col: Color, center
 	_draw_text(pos, text, size, col, centered)
 
 
+# Heavy multi-directional outline + fill — keeps a value legible on ANY backing
+# (bright painted token, green HP fill, busy art) WITHOUT an opaque pill that would
+# punch a hole into the element behind it. Used for HP-bar values, block-shield
+# numerals (white-on-silver), and status counts over bright enemy art.
+const _OUTLINE_OFFSETS := [
+	Vector2(-1.4, -1.4), Vector2(1.4, -1.4), Vector2(-1.4, 1.4), Vector2(1.4, 1.4),
+	Vector2(0.0, -1.8), Vector2(0.0, 1.8), Vector2(-1.8, 0.0), Vector2(1.8, 0.0),
+]
+
+func _draw_text_outlined(pos: Vector2, text: String, size: int, col: Color, outline: Color, spread: float = 1.0) -> void:
+	for o in _OUTLINE_OFFSETS:
+		_draw_text(pos + o * spread, text, size, outline, true)
+	_draw_text(pos, text, size, col, true)
+
+
 func _draw_card_face(rect: Rect2, card_data: Dictionary, affordable: bool, selected: bool) -> void:
 	# Full-bleed POV card: opaque painted illustration fills the rect; all chrome
 	# (legibility panels, cost badge, name, type, effect lines, border) is code-drawn
@@ -998,10 +1030,16 @@ func _draw_card_face(rect: Rect2, card_data: Dictionary, affordable: bool, selec
 	var type_y: float = rect.end.y - bottom_h + 12.0 * s
 	var pip_c := Vector2(rect.position.x + 14.0 * s, type_y - 4.0 * s)
 	var pip_r: float = 8.0 * s
-	var gem: Texture2D = _tex_icon.get("gem")
-	if gem != null:
+	# Per-element glyph (fire=flame, ice=shard, lightning=bolt, neutral=arcane gem) on an
+	# element-tinted medallion — so the pip actually SIGNALS the card's element by shape
+	# AND colour, instead of the same iridescent gem on every card (no info + reads as one
+	# decorative token everywhere). Reuses the painted status flame/shard so fire/ice cards
+	# echo their Burn/Chill icons.
+	var pip_glyph: Texture2D = _element_pip_tex(elem)
+	if pip_glyph != null:
 		_draw_token_disc(pip_c, pip_r + 1.5, elem_col)
-		draw_texture_rect(gem, Rect2(pip_c.x - pip_r, pip_c.y - pip_r, pip_r * 2.0, pip_r * 2.0), false)
+		var gz: float = pip_r * (1.0 if elem == "neutral" else 1.35)
+		draw_texture_rect(pip_glyph, Rect2(pip_c.x - gz, pip_c.y - gz, gz * 2.0, gz * 2.0), false)
 	else:
 		draw_circle(pip_c, pip_r * 0.7 + 1.5, Color(0.05, 0.04, 0.11, 0.9))
 		draw_circle(pip_c, pip_r * 0.7, elem_col)
@@ -1097,8 +1135,9 @@ func _draw_end_turn_button() -> void:
 # ─── Reward overlay ───────────────────────────────────────────────────────────
 
 func _draw_reward_overlay() -> void:
-	# Dim scrim
-	draw_rect(Rect2(0, 0, W, H), Color(0.0, 0.0, 0.0, 0.55))
+	# Dim scrim — strong enough to suppress the live combat chrome (enemy header) so it
+	# doesn't read behind the reward title band.
+	draw_rect(Rect2(0, 0, W, H), Color(0.0, 0.0, 0.0, 0.66))
 
 	# Title — on a solid backing pill (overlay text needs guaranteed contrast, not
 	# just the scrim) so the gold reads even where it crosses bright art behind it.
@@ -1239,42 +1278,33 @@ func _draw_hp_bar(rect: Rect2, frac: float, fill_col: Color, text: String, alpha
 	draw_rect(Rect2(rect.position + Vector2(2.0, 1.0), Vector2(rect.size.x - 4.0, 1.0)), Color(1, 1, 1, 0.10 * alpha))
 	if text != "":
 		var _fs: int = int(rect.size.y * 0.78)
-		var _f: Font = _font if _font != null else ThemeDB.fallback_font
-		var _tw: float = _f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, _fs).x if _f != null else 24.0
 		var _cx: float = rect.get_center().x
-		var _cy: float = rect.get_center().y
-		draw_rect(Rect2(_cx - _tw * 0.5 - 5.0, _cy - _fs * 0.5 - 1.0, _tw + 10.0, _fs + 4.0), Color(0.03, 0.02, 0.07, 0.86 * alpha))
-		_draw_text_shadow(Vector2(_cx, _cy + rect.size.y * 0.30), text, _fs, Color(1, 1, 1, alpha), true)
+		var _cy: float = rect.get_center().y + rect.size.y * 0.30
+		# Outlined numeral with NO opaque backing pill — a dark pill over the fill carves a
+		# gap into the green and the bar reads as segmented/broken (worst at high fill, e.g.
+		# boss 88/110). A TIGHT outline (spread 0.6) keeps it legible on green or dark track
+		# while the fill stays continuous, without the chunky heavy-outline look.
+		_draw_text_outlined(Vector2(_cx, _cy), text, _fs, Color(1, 1, 1, alpha),
+			Color(0.02, 0.02, 0.05, 0.95 * alpha), 0.6)
 
 
 func _draw_mana_orb(center: Vector2, filled: bool, r: float = 11.0) -> void:
-	# Painted mana-crystal token (generated, same checkpoint as the cards) so the
-	# resource reads as part of the painted set, not a flat vector orb. Filled =
-	# bright crystal + glow; spent = the same crystal dimmed/desaturated so the slot
-	# still reads. Falls back to the code orb if the token is missing.
-	if _tex_mana != null:
-		var sz: float = r * 2.6
-		var dest := Rect2(center.x - sz * 0.5, center.y - sz * 0.5, sz, sz)
-		if filled:
-			draw_circle(center, r * 1.15, Color(0.25, 0.75, 1.0, 0.30))
-			draw_texture_rect(_tex_mana, dest, false)
-		else:
-			draw_texture_rect(_tex_mana, dest, false, Color(0.32, 0.36, 0.48, 0.80))
-		return
-
-	# ── Fallback: richly-rendered code orb (glow + radial body + highlight) ──
+	# Richly-rendered CODE orb (outer glow + radial body + hot core + bright specular
+	# highlight). The generated mana token rendered too dark/muddy on the dark HUD panel,
+	# so the resource reads far better as a bright code orb (per the project's earlier
+	# "gen renders mana dark → rich code orbs" finding).
 	var ow: float = maxf(1.5, r * 0.16)
 	if filled:
-		draw_circle(center, r + 2.0, Color(0.30, 0.65, 1.0, 0.35))
-		draw_circle(center, r, Color(0.10, 0.28, 0.75))
-		draw_circle(center, r * 0.82, Color(0.20, 0.50, 0.98))
-		draw_circle(center, r * 0.55, Color(0.45, 0.78, 1.0))
-		draw_circle(center - Vector2(r * 0.30, r * 0.38), r * 0.24, Color(1, 1, 1, 0.9))
-		draw_arc(center, r, 0.0, TAU, 24, Color(0.03, 0.05, 0.15, 0.95), ow)
+		draw_circle(center, r + 3.0, Color(0.35, 0.75, 1.0, 0.40))            # outer glow
+		draw_circle(center, r, Color(0.14, 0.40, 0.92))                       # rim body
+		draw_circle(center, r * 0.82, Color(0.28, 0.62, 1.0))                 # mid
+		draw_circle(center, r * 0.52, Color(0.62, 0.88, 1.0))                 # hot core
+		draw_circle(center - Vector2(r * 0.30, r * 0.40), r * 0.26, Color(1, 1, 1, 0.95))  # specular
+		draw_arc(center, r, 0.0, TAU, 24, Color(0.04, 0.10, 0.30, 0.95), ow)  # outline
 	else:
-		draw_circle(center, r, Color(0.12, 0.14, 0.22, 0.7))
-		draw_circle(center, r * 0.55, Color(0.20, 0.24, 0.36, 0.7))
-		draw_arc(center, r, 0.0, TAU, 24, Color(0.03, 0.05, 0.15, 0.8), ow)
+		draw_circle(center, r, Color(0.14, 0.16, 0.26, 0.85))
+		draw_circle(center, r * 0.55, Color(0.22, 0.26, 0.40, 0.85))
+		draw_arc(center, r, 0.0, TAU, 24, Color(0.04, 0.06, 0.16, 0.9), ow)
 
 
 func _draw_shield_badge(center: Vector2, sz: float, col: Color, text: String, alpha: float = 1.0) -> void:
@@ -1286,8 +1316,11 @@ func _draw_shield_badge(center: Vector2, sz: float, col: Color, text: String, al
 		draw_texture_rect(_tex_shield, Rect2(center.x - w * 0.5, center.y - h * 0.5, w, h),
 			false, Color(1, 1, 1, alpha))
 		if text != "":
-			_draw_text_shadow(center + Vector2(0.0, sz * 0.5), text, int(sz * 1.15),
-				Color(0.97, 0.98, 1.0, alpha), true)
+			# White + heavy dark outline: the painted shield boss is bright SILVER, so a
+			# near-white value with only a 1px shadow vanished (grey-on-silver). The
+			# outline guarantees contrast on the metal at true size.
+			_draw_text_outlined(center + Vector2(0.0, sz * 0.5), text, int(sz * 1.15),
+				Color(1.0, 1.0, 1.0, alpha), Color(0.03, 0.04, 0.09, 0.95 * alpha))
 		return
 
 	var pts := PackedVector2Array([
@@ -1318,16 +1351,17 @@ func _draw_corner_ticks(r: Rect2, n: float, col: Color) -> void:
 		draw_line(p, p + dirs[i][1] * n, col, 2.0)
 
 
-func _draw_token_disc(center: Vector2, r: float, rim: Color, alpha: float = 1.0) -> void:
+func _draw_token_disc(center: Vector2, r: float, rim: Color, alpha: float = 1.0, tint: Color = Color(1, 1, 1, 1)) -> void:
 	# Painted medallion plate (generated, same checkpoint) behind an icon/value, with a
 	# soft element-coloured glow (no hard vector ring). The plate is drawn larger than
-	# r so the icon (drawn after, at ~1.55*r) seats inside its dark center. Falls back
-	# to a code disc only if the plate token is missing.
+	# r so the icon (drawn after, at ~1.55*r) seats inside its dark center. `tint` modulates
+	# the plate (default white = untinted) so callers can warm/cool the medallion. Falls
+	# back to a code disc only if the plate token is missing.
 	if _tex_plate != null:
 		draw_circle(center, r * 1.25, Color(rim.r, rim.g, rim.b, 0.22 * alpha))
 		var s: float = r * 1.95
 		draw_texture_rect(_tex_plate, Rect2(center.x - s, center.y - s, s * 2.0, s * 2.0),
-			false, Color(1, 1, 1, alpha))
+			false, Color(tint.r, tint.g, tint.b, alpha))
 		return
 	draw_circle(center, r + 4.0, Color(rim.r, rim.g, rim.b, 0.16 * alpha))
 	draw_circle(center, r + 2.0, Color(rim.r, rim.g, rim.b, 0.22 * alpha))
@@ -1362,6 +1396,16 @@ func _element_color(elem: String) -> Color:
 		"ice":       return COL_ICE
 		"lightning": return COL_LIGHTNING
 		_:           return COL_NEUTRAL
+
+
+func _element_pip_tex(elem: String) -> Texture2D:
+	# Distinct painted glyph per element (fire/ice reuse the Burn/Chill icons; neutral
+	# keeps the generic arcane gem). Falls back to the gem if a glyph is missing.
+	match elem:
+		"fire":      return _tex_icon.get("burn")
+		"ice":       return _tex_icon.get("chill")
+		"lightning": return _tex_icon.get("lightning")
+		_:           return _tex_icon.get("gem")
 
 
 func _effect_summary(effect: Dictionary, elem: String) -> Array:
