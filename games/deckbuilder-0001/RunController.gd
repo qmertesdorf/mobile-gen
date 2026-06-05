@@ -1,19 +1,22 @@
 extends RefCounted
 
 # RunController orchestrates a full deckbuilder run:
-#   5 nodes: combat(imp) → combat(frost_wraith) → rest → elite(golem) → boss(archmage)
+#   traverses a seeded branching MapGen graph from a floor-0 combat entry to the boss,
+#   deriving each combat's enemy from node type + floor.
 # Sits on top of CombatState (combat rules). Headless/pure — no rendering, no autoload.
 
 const CardDB := preload("res://data/CardDB.gd")
 const CombatState := preload("res://CombatState.gd")
 const MetaSave := preload("res://MetaSave.gd")
 const RelicDB := preload("res://data/RelicDB.gd")
+const MapGen := preload("res://MapGen.gd")
 
 # Run state.
 var rng: RandomNumberGenerator
 var deck: Array
-var nodes: Array
-var node_i: int
+var map               # MapModel
+var cur_id: int
+var current_enemy_id: String
 var relics: Array
 var run_hp: int
 var run_max_hp: int
@@ -27,14 +30,11 @@ func start_run(seed_value: int) -> void:
 
 	deck = CardDB.starter_deck().duplicate()
 
-	nodes = [
-		{"type": "combat", "enemy": "imp"},
-		{"type": "combat", "enemy": "frost_wraith"},
-		{"type": "rest"},
-		{"type": "elite",  "enemy": "golem"},
-		{"type": "boss",   "enemy": "archmage"},
-	]
-	node_i = 0
+	map = MapGen.generate(rng)
+	# Start on the lowest-id floor-0 entry node.
+	var entries: Array = map.nodes_on_floor(0)
+	entries.sort()
+	cur_id = entries[0]
 
 	relics = []
 	_complete = false
@@ -48,14 +48,30 @@ func start_run(seed_value: int) -> void:
 
 
 func current_node() -> Dictionary:
-	if node_i < 0 or node_i >= nodes.size():
-		return {}
-	return nodes[node_i]
+	return map.node(cur_id)
+
+
+func current_node_id() -> int:
+	return cur_id
+
+
+func available_next() -> Array:
+	return map.next_of(cur_id)
+
+
+func choose_next(node_id: int) -> void:
+	if node_id in map.next_of(cur_id):
+		cur_id = node_id
+
+
+func is_on_boss() -> bool:
+	return current_node().get("type", "") == "boss"
 
 
 func start_node_combat() -> CombatState:
 	var node: Dictionary = current_node()
-	var enemy_id: String = node.get("enemy", "")
+	var enemy_id: String = _enemy_for_node(node)
+	current_enemy_id = enemy_id
 
 	var cs: CombatState = CombatState.new()
 	cs.setup(rng.randi(), deck, enemy_id, run_hp)
@@ -65,6 +81,15 @@ func start_node_combat() -> CombatState:
 	RelicDB.apply_combat_start(relics, cs)
 
 	return cs
+
+
+func _enemy_for_node(node: Dictionary) -> String:
+	match node.get("type", ""):
+		"boss":  return "archmage"
+		"elite": return "golem"
+		_:
+			# Regular combat: shallower floors face the imp, deeper ones the frost wraith.
+			return "imp" if node.get("floor", 0) < 4 else "frost_wraith"
 
 
 func sync_hp_from_combat(cs) -> void:
@@ -114,9 +139,12 @@ func grant_elite_relic() -> void:
 
 
 func advance() -> void:
-	node_i += 1
-	if node_i >= nodes.size():
-		_complete = true
+	# With map traversal, advancing = choosing the next node (done via choose_next
+	# in the UI). This shim remains for non-combat auto-resolve paths that pick the
+	# first available next node when there is exactly one.
+	var nx: Array = available_next()
+	if nx.size() == 1:
+		choose_next(nx[0])
 
 
 func is_run_complete() -> bool:
@@ -155,8 +183,14 @@ func on_boss_defeated() -> void:
 	_complete = true
 
 
-# TEST-ONLY: jump the cursor to the boss node and invoke the boss-win path directly.
-# This lets the self-test exercise the meta write without playing all 5 nodes.
+# TEST-ONLY: walk the map greedily to the boss node and invoke the boss-win path
+# directly. This lets the self-test exercise the meta write without playing every node.
 func force_boss_defeat_for_test() -> void:
-	node_i = 4  # boss node index
+	var guard: int = 0
+	while not is_on_boss() and guard < 50:
+		var nx: Array = available_next()
+		if nx.is_empty():
+			break
+		choose_next(nx[0])
+		guard += 1
 	on_boss_defeated()

@@ -76,9 +76,12 @@ func _init() -> void:
 	if rewards.size() != 3:
 		_fail("reward screen offered %d cards, expected 3" % rewards.size()); return
 	run.choose_reward(rewards[0])
-	var node_before: Dictionary = run.current_node()
-	run.advance()
-	if run.current_node() == node_before:
+	var id_before: int = run.current_node_id()
+	var nxt3: Array = run.available_next()
+	if nxt3.is_empty():
+		_fail("no next node after first combat reward"); return
+	run.choose_next(nxt3[0])
+	if run.current_node_id() == id_before:
 		_fail("run did not advance after reward"); return
 	# Ensure the meta-save assertion reflects THIS run, not a stale user://save.json.
 	if FileAccess.file_exists("user://save.json"):
@@ -174,6 +177,31 @@ func _init() -> void:
 	var map2 = MapGen.generate(rng7b)
 	if map.fingerprint() != map2.fingerprint():
 		_fail("map generation is not deterministic for a fixed seed"); return
+	# Stage 8: run traverses the generated map by choosing among available next nodes.
+	var RC8 := load("res://RunController.gd")
+	var r8 = RC8.new()
+	r8.start_run(SEED)
+	# Start node is a floor-0 entry; current type is combat.
+	if r8.current_node().get("type", "") != "combat":
+		_fail("run did not start on a combat entry node"); return
+	# There is at least one available next node, and choosing it advances the cursor.
+	var avail: Array = r8.available_next()
+	if avail.is_empty():
+		_fail("no available next nodes from the entry"); return
+	var before_id: int = r8.current_node_id()
+	r8.choose_next(avail[0])
+	if r8.current_node_id() == before_id:
+		_fail("choosing a next node did not move the cursor"); return
+	# Walking the map greedily (always pick first available) eventually reaches the boss.
+	var guard: int = 0
+	while not r8.is_on_boss() and guard < 50:
+		var nx: Array = r8.available_next()
+		if nx.is_empty():
+			break
+		r8.choose_next(nx[0])
+		guard += 1
+	if not r8.is_on_boss():
+		_fail("greedy walk did not reach the boss node"); return
 	# --- end stages ---
 	print("SELFTEST OK")
 	quit(0)
