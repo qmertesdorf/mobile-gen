@@ -8,7 +8,7 @@ An AI pipeline that turns a one-line prompt into a playable mobile game, built a
 
 ## Layout
 
-- `.claude/skills/` — the `concept`, `builder`, `validator`, `asset` (re-skin/art), `visual-audit` (composited-screen audit), and `audio` (SFX+music) skills.
+- `.claude/skills/` — the `concept`, `builder`, `validator`, `deepen` (in-place iteration), `asset` (re-skin/art), `visual-audit` (composited-screen audit), `audio` (SFX+music), and `packager` skills.
 - `manifests/<id>.json` — one manifest per title (the spine; §5).
 - `games/<id>/` — generated Godot projects.
 - `tools/manifest.mjs` — the manifest CLI (`create` / `set-status` / `merge` / `validate`).
@@ -16,7 +16,9 @@ An AI pipeline that turns a one-line prompt into a playable mobile game, built a
 
 ## The loop
 
-prompt → `concept` → `builder` → `validator` → human playtest → edit the responsible `SKILL.md` → repeat across ≥3 genres. The deliverable is **better skills**, not the games. A `playable` title's art re-skin runs the sub-chain `asset` → `visual-audit` → `validator`(re-run) → `[styled]`.
+prompt → `concept` → `builder` → `validator` → human playtest → `( deepen → validator → playtest )*` → `asset` → `visual-audit` → `audio` → `packager`
+
+The deliverable is **better skills**, not the games. `deepen` is the loop's first in-place ITERATION skill — it grows a `validated`/`playable` game along one depth axis (systemic / content / run-meta) without advancing status. A `playable` title's art re-skin runs the sub-chain `asset` → `visual-audit` → `validator`(re-run) → `[styled]`.
 
 ## Manifest CLI
 
