@@ -152,7 +152,12 @@ func start_day() -> Array:
 	tide_left = tide_window()
 	_roll_demand()
 	_spawn_gather_nodes()
-	return [{"type": "day_started", "day": day, "demand": demand.duplicate()}]
+	return [
+		{"type": "day_started", "day": day, "demand": demand.duplicate()},
+		# Like every other phase mutation: the view rebuilds on phase_changed,
+		# so next_day()/restart_day() must announce the RESULTS->GATHER flip.
+		{"type": "phase_changed", "phase": Phase.GATHER},
+	]
 
 
 func _roll_demand() -> void:

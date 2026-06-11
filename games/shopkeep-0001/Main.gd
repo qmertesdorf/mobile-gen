@@ -589,12 +589,15 @@ func _build_sell() -> void:
 	sell_shelves_box = Control.new()
 	sell_shelves_box.position = Vector2.ZERO
 	sell_shelves_box.size = Vector2(720, 1280)
-	sell_shelves_box.mouse_filter = Control.MOUSE_FILTER_PASS
+	# IGNORE, not PASS: a full-screen PASS box wins the viewport hit-test and
+	# shadows clickable siblings underneath (PASS bubbles to ancestors, never to
+	# siblings). IGNORE skips the box itself; its child tiles stay clickable.
+	sell_shelves_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(sell_shelves_box)
 	sell_patrons_box = Control.new()
 	sell_patrons_box.position = Vector2.ZERO
 	sell_patrons_box.size = Vector2(720, 1280)
-	sell_patrons_box.mouse_filter = Control.MOUSE_FILTER_PASS
+	sell_patrons_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(sell_patrons_box)
 	# Counter band sits right under the shelf panel; patrons queue below it.
 	var rows: int = int(ceil(float(S.shelf_slots()) / 4.0))
