@@ -2,6 +2,7 @@ import { test, expect, describe } from "vitest";
 import { iconSizeTable, sizeBudget, pngSize, exportPresetCfg, parsePresetCfg, atlasLayout, splashSize, bootSplashCfg, verify, budgetReport, exportPresetsFile, buildArtifactPlan, androidToolchainPresent, buildArtifact, verifyBuildArtifact, packageNameFor } from "./package.mjs";
 import { parseHexLead, resolveIconBg } from "./package.mjs";
 import { iconCompositionRole } from "./package.mjs";
+import { parseScreenshotArgs } from "./package.mjs";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -657,5 +658,26 @@ describe("iconCompositionRole", () => {
   });
   test("unknown kind throws (fail loud)", () => {
     expect(() => iconCompositionRole("nope")).toThrow();
+  });
+});
+
+describe("parseScreenshotArgs", () => {
+  test("boot mode with defaults", () => {
+    expect(parseScreenshotArgs([])).toEqual({ mode: "boot", name: "screen-1", frames: 220 });
+  });
+  test("boot mode with name + frames", () => {
+    expect(parseScreenshotArgs(["gather", "300"]))
+      .toEqual({ mode: "boot", name: "gather", frames: 300 });
+  });
+  test("--script switches to script mode", () => {
+    expect(parseScreenshotArgs(["--script", "res://_shots.gd"]))
+      .toEqual({ mode: "script", script: "res://_shots.gd" });
+  });
+  test("--script ignores trailing name/frames (the script owns them)", () => {
+    expect(parseScreenshotArgs(["--script", "res://_shots.gd", "x", "9"]))
+      .toEqual({ mode: "script", script: "res://_shots.gd" });
+  });
+  test("--script without a path throws", () => {
+    expect(() => parseScreenshotArgs(["--script"])).toThrow();
   });
 });

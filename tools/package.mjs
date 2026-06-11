@@ -552,6 +552,19 @@ export function verify(id, { gamesDir = GAMES_DIR, manifest } = {}) {
   return { id, issues, file_checks_pass: issues.length === 0, both_passes_present: bothPasses, status: m.status };
 }
 
+// Parse the post-id args of `package.mjs screenshot`. --script <path> runs a
+// game-provided capture harness (script owns its moments); otherwise boot mode
+// captures one frame at [name] [frames]. Pure.
+export function parseScreenshotArgs(args) {
+  const i = args.indexOf("--script");
+  if (i >= 0) {
+    const script = args[i + 1];
+    if (!script || script.startsWith("--")) throw new Error("package: screenshot --script needs a res:// path");
+    return { mode: "script", script };
+  }
+  return { mode: "boot", name: args[0] || "screen-1", frames: Number(args[1] || 220) };
+}
+
 const USAGE = "usage: node tools/package.mjs <icons|atlas|screenshot|splash|budget|preset|build|verify|verify-build|--check> <id> ...";
 
 async function cli(argv) {
