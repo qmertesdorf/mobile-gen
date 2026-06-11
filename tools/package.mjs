@@ -293,6 +293,19 @@ export function resolveIconBg({ bgArg, manifest = {} } = {}) {
   return { top: "#202830", bottom: "#202830" };
 }
 
+// Map an iconSizeTable kind to how icon_compose.gd renders it.
+// focal = transparent subject inside the adaptive safe zone; background = gradient
+// fill; composite = focal alpha-blended over the gradient, opaque. Pure.
+export function iconCompositionRole(kind) {
+  switch (kind) {
+    case "adaptive_fg": return "focal";
+    case "adaptive_bg": return "background";
+    case "launcher":
+    case "play": return "composite";
+    default: throw new Error(`package: iconCompositionRole: unknown kind "${kind}"`);
+  }
+}
+
 // Resolve the pinned Godot binary. Set GODOT_BIN to the absolute path of your
 // Godot 4.6.3 console executable; otherwise we look for `godot` on PATH.
 function godotBin() {

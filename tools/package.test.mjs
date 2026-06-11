@@ -1,6 +1,7 @@
 import { test, expect, describe } from "vitest";
 import { iconSizeTable, sizeBudget, pngSize, exportPresetCfg, parsePresetCfg, atlasLayout, splashSize, bootSplashCfg, verify, budgetReport, exportPresetsFile, buildArtifactPlan, androidToolchainPresent, buildArtifact, verifyBuildArtifact, packageNameFor } from "./package.mjs";
 import { parseHexLead, resolveIconBg } from "./package.mjs";
+import { iconCompositionRole } from "./package.mjs";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -635,5 +636,26 @@ describe("resolveIconBg", () => {
   });
   test("absent everything → neutral default", () => {
     expect(resolveIconBg({ manifest: {} })).toEqual({ top: "#202830", bottom: "#202830" });
+  });
+});
+
+describe("iconCompositionRole", () => {
+  test("adaptive_fg → focal (transparent subject in safe zone)", () => {
+    expect(iconCompositionRole("adaptive_fg")).toBe("focal");
+  });
+  test("adaptive_bg → background (gradient fill)", () => {
+    expect(iconCompositionRole("adaptive_bg")).toBe("background");
+  });
+  test("launcher + play → composite (focal over bg, opaque)", () => {
+    expect(iconCompositionRole("launcher")).toBe("composite");
+    expect(iconCompositionRole("play")).toBe("composite");
+  });
+  test("every iconSizeTable kind maps to a role", () => {
+    for (const e of iconSizeTable()) {
+      expect(["focal", "background", "composite"]).toContain(iconCompositionRole(e.kind));
+    }
+  });
+  test("unknown kind throws (fail loud)", () => {
+    expect(() => iconCompositionRole("nope")).toThrow();
   });
 });
