@@ -67,6 +67,20 @@ godot --headless --path games/<id>/ --script res://selftest.gd
 
 Determinism is mandatory: the seed is fixed in `selftest.gd`, so a flaky self-test is itself a `builder` finding (an unseeded RNG path in the engine). The human playtest (Method 2) still gates `playable` — the self-test proves the rules are correct, the human confirms it *feels* like a game worth replaying.
 
+## Method 1.7 — Interaction self-test (automated; REQUIRED if `games/<id>/uitest.gd` exists)
+
+Methods 1.5/1.6 prove the **rules** (they drive the engine directly) and the visual audit proves the **pixels**; neither can see whether a tap on a control actually reaches its handler. That seam — mouse-filter shadowing, a phase mutation that never emits its rebuild event, a dead button, an overlapping hit-rect — is invisible to both, and an unscripted human playtest has no coverage guarantee (shopkeep-0001 reached `playable` with its sell tap completely dead and a stale screen after Next Day). `builder` emits `games/<id>/uitest.gd` for tap/click-driven games: a headless `SceneTree` script that boots `Main.tscn`, pushes real `InputEventMouseButton` clicks through the full core loop, and asserts **engine state** after every click. Run it:
+```
+godot --headless --path games/<id>/ --script res://uitest.gd
+```
+- **PASS** = exit code 0 AND output contains `UITEST OK`. Record it:
+  ```
+  node tools/manifest.mjs merge <id> "{\"validation\": {\"interaction_functional\": true}}"
+  ```
+  Advance to `validated` only when this AND the applicable logic self-test (1.5/1.6) both pass.
+- **FAIL** = `UITEST FAIL: <n> checks failed` or non-zero exit. Record each failing `UITEST FAIL:` check line verbatim in `issues`, set `interaction_functional: false`, `set-status <id> failed`, and STOP. Attribute it to `builder` on a fresh build, or to **whichever skill last reworked the view** (asset / deepen / visual-audit fix pass) on a re-validation — with the precise check (e.g. "asset: shelf_tap_sells — full-screen container with MOUSE_FILTER_PASS swallows shelf taps").
+- **No `uitest.gd` for a tap/click-driven game** is itself a `builder` finding — note it ("shipped no automated proof its controls receive input"), then proceed on the other gates and lean harder on Method 2.
+
 ## Method 2 — Human playtest (manual now)
 
 4. Ask the owner to open the project in the Godot editor and play for ~60 seconds, confirming the core loop from `concept.core_loop` (e.g. tap → jump, score climbs, game-over → restart works).
@@ -88,6 +102,7 @@ When `asset` has re-skinned a `playable` title — via the **`svg`** *or* the **
 
 1. **Headless import + run clean** — `godot --headless --path games/<id>/ --quit-after 120`, exit 0 with no `SCRIPT ERROR` / `ERROR:` / "Failed to load". Proves the textures (`.svg` or `.png`) imported and the rewired scene runs. (Confirm the `asset` skill ran `--import` first, or `load("res://art/...")` returns null.)
 2. **`selftest.gd` still `SELFTEST OK`** (if the title has one) — proves the swap changed only visuals, not logic.
+2b. **`uitest.gd` still `UITEST OK`** (if the title has one) — the re-skin rewires exactly the layer where interaction breaks, and the frozen-logic rule + selftest cannot see it (they prove the *engine*, not that taps still reach it). Exit 0 + `UITEST OK`, run as in Method 1.7; on failure attribute to `asset` with the failing check.
 3. **Human A/B playtest** — the owner confirms the re-skin (a) looks more designed than the primitive original, (b) **reads as one coherent visual system** rather than mismatched assets, and (c) plays identically.
    - **Cross-modal cohesion (when ≥2 modalities are present — e.g. the title also carries an `audio_pass`, or at M2 a `store_pass`):** confirm the visuals, audio, and (at M2) the icon **read as one themed world** — the same premise/tone/setting from `concept.theme` — not three independent interpretations. On failure, attribute it to a **`concept.theme` gap** (the anchor was too vague to align the modalities) or to a **skill that ignored the theme** (e.g. "audio: chose a chiptune mood for a cozy-storybook theme — ignored `concept.theme.tone`") — a specific, fixable prose cause, exactly like the within-modality cohesion finding above.
 

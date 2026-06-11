@@ -37,7 +37,7 @@ Two methods, both sharing all the rewiring craft below — only how the texture 
 
 ## Hard requirements
 - The re-skinned project MUST still import and run **headless with no script errors** (validator re-enforces).
-- Game **logic is untouched** — movement, collision, spawning, scoring, input, game-over/restart behave exactly as before. Only the *visual representation* changes. If a `selftest.gd` exists it must still print `SELFTEST OK`.
+- Game **logic is untouched** — movement, collision, spawning, scoring, input, game-over/restart behave exactly as before. Only the *visual representation* changes. If a `selftest.gd` exists it must still print `SELFTEST OK`. If a `uitest.gd` exists it must still print `UITEST OK` — the re-skin rewires exactly the view layer where taps break (mouse-filter shadowing, lost signal wiring), and the frozen-logic rule + selftest cannot see that seam (shopkeep-0001 shipped with its sell tap dead under green selftests).
 - **No double-draw:** for every re-skinned entity the old `_draw()` primitive is removed or guarded. Leaving the primitive *and* adding the texture is the most common failure — prevent it.
 - No new MCP tool or dependency beyond the existing `tools/comfy.mjs` raster stack.
 - Do **not** edit `concept` or `builder`. Consume `concept.art_direction` as-is.
@@ -209,7 +209,7 @@ If a concept's `art_direction` leans representational enough that hand-authored 
 3. Validate the manifest (still `playable` at this point): `node tools/manifest.mjs validate <id>` → expect `<id> OK`.
 
 ## Hand off to visual-audit
-Do **not** set `styled` yourself. Hand off the rewired game to the `visual-audit` skill, which judges the composited running screen (inventory / fidelity-cohesion / composition-collision / legibility / colour-accessibility lenses) and drives the fix → re-render → re-audit loop. It in turn hands to `validator`, which re-runs the mechanical gates (headless import + run clean; `selftest.gd` still `SELFTEST OK` if present; human A/B playtest) and advances `playable → styled` on success, or records legible `issues` (attributed to `asset` or to chrome-code) and stops on failure.
+Do **not** set `styled` yourself. Hand off the rewired game to the `visual-audit` skill, which judges the composited running screen (inventory / fidelity-cohesion / composition-collision / legibility / colour-accessibility lenses) and drives the fix → re-render → re-audit loop. It in turn hands to `validator`, which re-runs the mechanical gates (headless import + run clean; `selftest.gd` still `SELFTEST OK` and `uitest.gd` still `UITEST OK` if present; human A/B playtest) and advances `playable → styled` on success, or records legible `issues` (attributed to `asset` or to chrome-code) and stops on failure.
 
 ## Notes
 - The `--import` pass must run before the validator's headless run, or `load("res://art/...")` returns null at runtime.

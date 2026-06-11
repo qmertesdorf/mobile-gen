@@ -201,7 +201,17 @@ Assert what a human would check, e.g.:
 - `_game_over()` fires when the loss condition is forced.
 Keep it deterministic and headless-safe. The `validator` runs it automatically and will `fail` the build on `SELFTEST FAIL`. For a trivially simple arcade loop where a state assertion adds nothing, you may skip it — but say so explicitly in the build notes so the omission is a deliberate, legible choice, not a gap.
 
-**For tap/click-driven games, also audit the view↔input seam with REAL clicks.** A state-level self-test (drives the engine directly) and a pixel audit (judges renders) both miss a whole bug class: the screen looks right and the rules are right, but taps never reach handlers (mouse-filter shadowing, missing rebuild events — both bit shopkeep-0001). The cheap pattern: a throwaway `SceneTree` script that boots `Main.tscn` headless, builds `InputEventMouseButton` down+up pairs at each control's `get_global_rect().get_center()`, pushes them via `root.push_input(ev, true)` (`in_local_coords=true` — the headless window ignores project size, so window coords mis-stretch), and asserts the *engine state* changed after each click through the full core loop. Make outcome checks deterministic by forcing the relevant state first (e.g. set the patron's want to the shelf item you'll tap) — post-action UI resets make "did the tap land" ambiguous otherwise.
+## Interaction self-test for tap/click-driven games (REQUIRED — emit `games/<id>/uitest.gd`)
+
+A state-level self-test (drives the engine directly) and a pixel audit (judges renders) both miss a whole bug class: the screen looks right and the rules are right, but taps never reach handlers (mouse-filter shadowing, missing rebuild events — both shipped in shopkeep-0001 and survived every gate including the human playtest). For any game whose core loop is driven by tapping/clicking controls, emit **`games/<id>/uitest.gd`** alongside `selftest.gd` — its view↔input twin (`selftest.gd` proves the rules; `uitest.gd` proves a tap reaches them). The `validator` runs it (Method 1.7) and `fail`s the build on `UITEST FAIL`; view-mutating passes (asset / deepen / visual-audit fixes) re-run it before handoff. Reference implementation: `games/shopkeep-0001/uitest.gd`.
+
+Contract and technique:
+- A headless `SceneTree` script that boots `Main.tscn`, then walks the **full core loop with real clicks**: build `InputEventMouseButton` down+up pairs at each control's `get_global_rect().get_center()` and push via `root.push_input(ev, true)` (`in_local_coords=true` — the headless window ignores project size, so window-coord pushes get mis-stretched).
+- After every click, assert **engine state** changed (resource collected, phase advanced, sale counted) — never assert only view internals; the point is proving input reaches the rules.
+- Print one `UITEST PASS:`/`UITEST FAIL:` line per check, then exactly `UITEST OK` + exit 0, or `UITEST FAIL: <n> checks failed` + exit 1. (Track failures — a script that always exits 0 cannot gate anything.)
+- Make outcome checks deterministic: fixed seed, and force the relevant state before an outcome-dependent click (e.g. set the patron's want to the shelf item you'll tap) — post-action UI resets make "did the tap land" ambiguous otherwise.
+- If the test triggers a persistence write, clear the real `user://` save at start AND end so test state never leaks into the next boot.
+- Cover at minimum: one tap per distinct control type, every phase/screen transition button, and the loop seam back to the start (e.g. next-day → first screen rebuilt).
 
 Run your own self-test before handing off:
 ```

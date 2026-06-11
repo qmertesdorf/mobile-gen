@@ -44,7 +44,10 @@ bigger.
      classic mistake — re-skinning must not touch rules; deepening is *all about*
      touching them, safely.
    - Existing assertions are the **regression guard**. `SELFTEST OK` must hold after
-     every change.
+     every change — and `UITEST OK` too if a `uitest.gd` exists: deepening adds
+     screens and controls, and a new view that renders fine can still swallow taps
+     or skip its rebuild event (invisible to selftest, which bypasses the view).
+     New tappable screens get new `uitest.gd` checks, same RED→GREEN discipline.
    - For each new system, **write its assertion first (RED) → implement → GREEN.**
      Prove new mechanics the same deterministic, headless way the original logic was.
    - **Never weaken or delete an existing assertion to make room.** If a new system

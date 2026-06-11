@@ -15,7 +15,7 @@ Also invocable standalone: point it at any running game to grade its screen.
 
 ## What this skill does NOT touch
 - The per-PNG generation audit (subject/tone/cohesion of each generated image → regenerate) lives in `asset`; it runs at generation time and drives re-generation.
-- Game logic. Fixes are visual (chrome code, import settings) or routed back to `asset` as regen requests. If a `selftest.gd` exists it must still print `SELFTEST OK` after fixes.
+- Game logic. Fixes are visual (chrome code, import settings) or routed back to `asset` as regen requests. If a `selftest.gd` exists it must still print `SELFTEST OK` after fixes — and if a `uitest.gd` exists it must still print `UITEST OK`: audit fixes edit view/chrome code, which is exactly where taps silently break (mouse-filter shadowing, z-order, lost signal wiring), and no pixel lens can see input routing.
 - The manifest. This is a transient gate: its outputs are code fixes (captured in git) and a findings report to the owner. The validator asserts "did the gate pass" via the human A/B when it advances to `styled`.
 
 ## Workflow
